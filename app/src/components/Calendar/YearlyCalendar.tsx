@@ -181,20 +181,25 @@ export const YearlyCalendar: FC<YearlyCalendarProps> = ({ data, onDateSelect }) 
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-end mt-3 text-gray-500" style={{ gap: '4px' }}>
-        <span style={{ fontSize: '11px', marginRight: '4px' }}>Less</span>
-        {[0, 1, 2, 3, 4].map((level) => (
-          <div
-            key={level}
-            style={{
-              width: '10px',
-              height: '10px',
-              borderRadius: '2px',
-              backgroundColor: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'][level],
-            }}
-          />
-        ))}
-        <span style={{ fontSize: '11px', marginLeft: '4px' }}>More</span>
+      <div className="flex items-center justify-between mt-3">
+        <span className="text-xs text-gray-400">
+          ※ 色はポモドーロ完了数で決まります（0→1-2→3-4→5-6→7+）
+        </span>
+        <div className="flex items-center text-gray-500" style={{ gap: '4px' }}>
+          <span style={{ fontSize: '11px', marginRight: '4px' }}>Less</span>
+          {[0, 1, 2, 3, 4].map((level) => (
+            <div
+              key={level}
+              style={{
+                width: '10px',
+                height: '10px',
+                borderRadius: '2px',
+                backgroundColor: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'][level],
+              }}
+            />
+          ))}
+          <span style={{ fontSize: '11px', marginLeft: '4px' }}>More</span>
+        </div>
       </div>
     </div>
   );
