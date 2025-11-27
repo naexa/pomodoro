@@ -1,16 +1,21 @@
-import { format, subDays, startOfWeek, addDays } from 'date-fns';
+import { format, subDays, startOfWeek, addDays, subWeeks } from 'date-fns';
 
 export const formatDate = (date: Date): string => {
   return format(date, 'yyyy-MM-dd');
 };
 
-export const getCalendarDays = (weeks: number = 12): Date[] => {
+export const getCalendarDays = (weeks: number = 52): Date[] => {
   const today = new Date();
-  const start = startOfWeek(subDays(today, weeks * 7), { weekStartsOn: 0 });
+  // 今週の終わり（土曜日）を基準に、指定週数分遡る
+  const endOfCurrentWeek = addDays(startOfWeek(today, { weekStartsOn: 0 }), 6);
+  const start = startOfWeek(subWeeks(endOfCurrentWeek, weeks - 1), { weekStartsOn: 0 });
   const days: Date[] = [];
 
-  for (let i = 0; i < weeks * 7 + 7; i++) {
-    days.push(addDays(start, i));
+  // 今日までの日付を生成
+  let current = start;
+  while (current <= today) {
+    days.push(current);
+    current = addDays(current, 1);
   }
 
   return days;

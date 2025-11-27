@@ -4,31 +4,42 @@ import { getContributionLevel } from '../../utils/dateUtils';
 
 interface CalendarCellProps {
   date: Date;
+  pomodoroCount: number;
   completedCount: number;
 }
 
-const levelColors = [
-  'bg-contrib-0',
-  'bg-contrib-1',
-  'bg-contrib-2',
-  'bg-contrib-3',
-  'bg-contrib-4',
+const LEVEL_COLORS = [
+  '#ebedf0', // Level 0
+  '#9be9a8', // Level 1
+  '#40c463', // Level 2
+  '#30a14e', // Level 3
+  '#216e39', // Level 4
 ];
 
-export const CalendarCell: FC<CalendarCellProps> = ({ date, completedCount }) => {
-  const level = getContributionLevel(completedCount);
+export const CalendarCell: FC<CalendarCellProps> = ({ date, pomodoroCount, completedCount }) => {
+  const level = getContributionLevel(pomodoroCount);
   const dateStr = format(date, 'yyyy-MM-dd');
-  const displayDate = format(date, 'M/d');
+  const displayDate = format(date, 'MMM d, yyyy');
 
   const handleClick = () => {
     window.open(`/log?date=${dateStr}`, '_blank');
   };
 
+  const tooltipText = `${displayDate}: ${pomodoroCount} pomodoros, ${completedCount} tasks completed`;
+
   return (
     <div
       onClick={handleClick}
-      className={`w-3 h-3 rounded-sm ${levelColors[level]} cursor-pointer hover:ring-1 hover:ring-gray-400`}
-      title={`${displayDate}: ${completedCount}件完了 (クリックで詳細)`}
+      style={{
+        width: '10px',
+        height: '10px',
+        borderRadius: '2px',
+        backgroundColor: LEVEL_COLORS[level],
+        cursor: 'pointer',
+        outline: 'none',
+      }}
+      className="hover:ring-1 hover:ring-white hover:ring-opacity-50"
+      title={tooltipText}
       data-date={dateStr}
     />
   );

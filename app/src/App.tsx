@@ -209,9 +209,9 @@ const App: FC = () => {
         </div>
 
         {/* Contribution Calendar */}
-        <div className="mt-6 bg-white p-6 rounded-lg shadow">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Contribution カレンダー</h2>
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xl font-semibold text-gray-800">Contribution Calendar</h2>
             <Link
               to="/log"
               target="_blank"
@@ -220,9 +220,7 @@ const App: FC = () => {
               日別ログを見る →
             </Link>
           </div>
-          <div className="overflow-x-auto">
-            <ContributionCalendar data={calendarData} />
-          </div>
+          <ContributionCalendar data={calendarData} />
           <p className="text-xs text-gray-400 mt-2">
             ※ カレンダーの日付をクリックすると詳細ログが開きます
           </p>
