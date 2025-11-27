@@ -207,17 +207,21 @@ pomodoro/
 | GET | `/api/daily-log/:date` | 日別ログ取得 |
 | GET | `/api/quotes` | 名言一覧取得 |
 
-## 本番デプロイ
+## データの保存について
 
-<!-- TODO: サーバー準備後に追記 -->
-- PM2やsystemdでのプロセス管理
-- Nginxリバースプロキシ設定
-- 環境変数の設定（PORT, DATA_PATH等）
+すべてのデータは`app/data/`ディレクトリ内のJSONファイルにローカル保存されます：
 
-## ライセンス
+| ファイル | 内容 |
+|----------|------|
+| `tasks.json` | タスク一覧 |
+| `calendar.json` | ポモドーロ・完了タスク数 |
+| `reflections.json` | 振り返りログ |
+| `settings.json` | タイマー・YouTube設定 |
+| `taskHistory.json` | 完了タスク履歴 |
+| `famous_saying.csv` | 名言データ（カスタマイズ可） |
 
-MIT
+クラウド同期やデータベースは使用していないため、データはこのPC内にのみ保存されます。
 
 ## 作者
 
-<!-- TODO: 作者情報を追加 -->
+naexa
