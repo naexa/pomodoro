@@ -6,6 +6,7 @@ interface CalendarCellProps {
   date: Date;
   pomodoroCount: number;
   completedCount: number;
+  onClick?: () => void;
 }
 
 const LEVEL_COLORS = [
@@ -16,13 +17,17 @@ const LEVEL_COLORS = [
   '#216e39', // Level 4
 ];
 
-export const CalendarCell: FC<CalendarCellProps> = ({ date, pomodoroCount, completedCount }) => {
+export const CalendarCell: FC<CalendarCellProps> = ({ date, pomodoroCount, completedCount, onClick }) => {
   const level = getContributionLevel(pomodoroCount);
   const dateStr = format(date, 'yyyy-MM-dd');
   const displayDate = format(date, 'MMM d, yyyy');
 
   const handleClick = () => {
-    window.open(`/log?date=${dateStr}`, '_blank');
+    if (onClick) {
+      onClick();
+    } else {
+      window.open(`/log?date=${dateStr}`, '_blank');
+    }
   };
 
   const tooltipText = `${displayDate}: ${pomodoroCount} pomodoros, ${completedCount} tasks completed`;

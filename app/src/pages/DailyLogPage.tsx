@@ -4,6 +4,8 @@ import { format, addDays, subDays, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { fetchDailyLog, DailyLogResponse } from '../api/dataApi';
 import { formatDate } from '../utils/dateUtils';
+import { YearlyCalendar } from '../components/Calendar';
+import { useCalendar } from '../hooks/useCalendar';
 
 export const DailyLogPage: FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -14,6 +16,7 @@ export const DailyLogPage: FC = () => {
   });
   const [logData, setLogData] = useState<DailyLogResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const { data: calendarData } = useCalendar();
 
   const loadLog = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
@@ -64,7 +67,7 @@ export const DailyLogPage: FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <div className="container mx-auto px-4 py-8 max-w-3xl">
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <Link
@@ -193,6 +196,15 @@ export const DailyLogPage: FC = () => {
             データが見つかりません
           </div>
         )}
+
+        {/* Yearly Calendar */}
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold text-gray-800 mb-3">Contribution Calendar</h2>
+          <YearlyCalendar
+            data={calendarData}
+            onDateSelect={handleDateChange}
+          />
+        </div>
       </div>
     </div>
   );
