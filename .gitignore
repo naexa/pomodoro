@@ -7,9 +7,9 @@ app/dist/
 # Data files (user's personal data)
 app/data/*.json
 
-# Famous sayings CSV (user customizable)
-famous_saying.csv
+# Famous sayings CSV (user customizable, in app/data/)
 app/data/famous_saying.csv
+famous_saying.csv
 
 # Project management files (not needed for app)
 CLAUDE.md
