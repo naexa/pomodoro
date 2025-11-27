@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Build output
+app/dist/
+
+# Data files (user's personal data)
+app/data/*.json
+
+# Famous sayings CSV (user customizable)
+famous_saying.csv
+app/data/famous_saying.csv
+
+# Project management files (not needed for app)
+CLAUDE.md
+PLAN.md
+.claude/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Misc
+nul
