@@ -183,7 +183,7 @@ export const YearlyCalendar: FC<YearlyCalendarProps> = ({ data, onDateSelect }) 
       {/* Legend */}
       <div className="flex items-center justify-between mt-3">
         <span className="text-xs text-gray-400">
-          ※ 色はポモドーロ完了数で決まります（0→1-2→3-4→5-6→7+）
+          ※ 色はポモドーロ完了数で決まります（0→1→2→3-4→5+）
         </span>
         <div className="flex items-center text-gray-500" style={{ gap: '4px' }}>
           <span style={{ fontSize: '11px', marginRight: '4px' }}>Less</span>
