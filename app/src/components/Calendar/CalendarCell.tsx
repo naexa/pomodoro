@@ -38,7 +38,7 @@ export const CalendarCell: FC<CalendarCellProps> = ({ date, pomodoroCount, compl
         cursor: 'pointer',
         outline: 'none',
       }}
-      className="hover:ring-1 hover:ring-white hover:ring-opacity-50"
+      className="hover:ring-1 hover:ring-gray-400"
       title={tooltipText}
       data-date={dateStr}
     />

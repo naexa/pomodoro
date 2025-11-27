@@ -68,9 +68,9 @@ export const ContributionCalendar: FC<ContributionCalendarProps> = ({ data }) =>
   }, [weeks]);
 
   return (
-    <div className="p-5 rounded-md" style={{ backgroundColor: '#161b22' }}>
+    <div className="p-5 rounded-lg bg-white shadow">
       {/* Stats header */}
-      <div className="mb-4 text-sm" style={{ color: '#c9d1d9' }}>
+      <div className="mb-4 text-sm text-gray-700">
         <span className="font-semibold">{totalContributions} contributions</span>
         <span className="text-gray-500"> in the last year</span>
       </div>
@@ -86,9 +86,9 @@ export const ContributionCalendar: FC<ContributionCalendarProps> = ({ data }) =>
               return (
                 <div
                   key={`${month}-${weekIndex}`}
+                  className="text-gray-500"
                   style={{
                     width: `${width}px`,
-                    color: '#8b949e',
                     fontSize: '12px',
                   }}
                 >
@@ -105,10 +105,10 @@ export const ContributionCalendar: FC<ContributionCalendarProps> = ({ data }) =>
               {WEEKDAY_LABELS.map((day, index) => (
                 <div
                   key={day}
+                  className="text-gray-500"
                   style={{
                     height: '10px',
                     fontSize: '10px',
-                    color: '#8b949e',
                     display: 'flex',
                     alignItems: 'center',
                   }}
@@ -153,8 +153,8 @@ export const ContributionCalendar: FC<ContributionCalendarProps> = ({ data }) =>
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-end mt-3" style={{ gap: '4px' }}>
-        <span style={{ fontSize: '11px', color: '#8b949e', marginRight: '4px' }}>Less</span>
+      <div className="flex items-center justify-end mt-3 text-gray-500" style={{ gap: '4px' }}>
+        <span style={{ fontSize: '11px', marginRight: '4px' }}>Less</span>
         {[0, 1, 2, 3, 4].map((level) => (
           <div
             key={level}
@@ -166,7 +166,7 @@ export const ContributionCalendar: FC<ContributionCalendarProps> = ({ data }) =>
             }}
           />
         ))}
-        <span style={{ fontSize: '11px', color: '#8b949e', marginLeft: '4px' }}>More</span>
+        <span style={{ fontSize: '11px', marginLeft: '4px' }}>More</span>
       </div>
     </div>
   );
