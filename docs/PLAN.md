@@ -1,202 +1,150 @@
-# ポモドーロタイマーアプリ 要件定義・実装計画
+# ポモドーロタイマーアプリ 実装計画
 
-## 要件定義
+## 現在の計画: IndexedDB移行 + エクスポート/インポート機能
 
-### 1. ポモドーロタイマー機能
-- 集中時間：25分、休憩：10分
-- タイマーの開始/停止/リセット
-- モード自動切り替え（集中→休憩→集中...）
+### 目的
+- サーバーレス（静的ホスティング）対応のためIndexedDBへ移行
+- 手動エクスポート/インポートで端末間データ移行を可能に
+- 既存データを保持したまま移行
 
-### 2. YouTube音楽連携
-- 集中時と休憩時で別のYouTube URLを設定
-- 基本はiframe埋め込み（API不要）
-- オプションでYouTube API対応（APIキー設定画面）
-
-### 3. タスク管理
-- タスクの追加/削除/編集
-- 完了チェック機能
-- 「今フォーカスするタスク」の選択・表示
-
-### 4. Contributionカレンダー
-- GitHubスタイルの色付きカレンダー
-- タスク完了数で色が濃くなる
-- 日ごとのログ蓄積
-
-### 5. 振り返り機能
-- 朝に前日の振り返りを入力
-- タイマー下に表示して意識させる
-
-### 6. データ保存・起動
-- ローカルJSONファイルで永続化
-- `npm start` でローカルサーバー起動
+### 背景
+- Web公開時に静的ホスティング（Vercel/Netlify等）を使いたい
+- 外部DBは漏洩リスクで避けたい
+- 端末間同期は「あれば嬉しい」程度（必須ではない）
+- LocalStorageは容量不安（5MB制限）→ IndexedDB（100MB+）を採用
 
 ---
 
-## 技術スタック
+## 現状の構造
 
-| 分類 | 技術 | 理由 |
-|------|------|------|
-| フロントエンド | React 18 + TypeScript | コンポーネント指向、型安全性 |
-| スタイリング | Tailwind CSS | 迅速なUI構築、色分け容易 |
-| バックエンド | Express.js (Node.js) | 軽量、JSONファイル操作に最適 |
-| ビルドツール | Vite | 高速HMR、React+TS対応優秀 |
-| 同時起動 | concurrently | フロント+バックエンド同時起動 |
-| 日付操作 | date-fns | カレンダー表示、ログ管理 |
+```
+React Components
+    ↓
+Custom Hooks (useTasks, useCalendar, etc.)
+    ↓
+dataApi.ts (fetch APIクライアント)
+    ↓
+Express.js Server (port 3001)
+    ↓
+app/data/*.json ファイル
+```
+
+**移行対象データ（7種類）:**
+| データ | ファイル | 操作 |
+|--------|----------|------|
+| Tasks | tasks.json | CRUD |
+| Calendar | calendar.json | Read/Update |
+| Categories | categories.json | CRUD |
+| Reflections | reflections.json | Create/Read/Update |
+| Settings | settings.json | Read/Update |
+| TaskHistory | taskHistory.json | Read/Create |
+| Quotes | famous_saying.csv | Read only |
 
 ---
 
-## ディレクトリ構造
+## 移行後の構造
 
 ```
-pomodoro/
-├── CLAUDE.md
-├── README.md
-├── PLAN.md
-├── package.json
-├── tsconfig.json
-├── vite.config.ts
-├── tailwind.config.js
-│
-├── data/                        # JSONデータ永続化
-│   ├── tasks.json
-│   ├── calendar.json
-│   ├── reflections.json
-│   └── settings.json
-│
-├── server/                      # バックエンド
-│   └── index.ts
-│
-└── src/                         # フロントエンド
-    ├── main.tsx
-    ├── App.tsx
-    ├── index.css
-    ├── components/
-    │   ├── Timer/
-    │   ├── YouTube/
-    │   ├── Tasks/
-    │   ├── Calendar/
-    │   └── Reflection/
-    ├── hooks/
-    ├── api/
-    ├── types/
-    └── utils/
+React Components
+    ↓
+Custom Hooks (useTasks, useCalendar, etc.)
+    ↓
+dataApi.ts (IndexedDB操作に変更)
+    ↓
+IndexedDB (ブラウザ内蔵DB)
 ```
+
+- **Express.jsサーバー不要**
+- **静的ホスティングで動作**
+- **データはブラウザに永続保存**
 
 ---
 
-## データ構造（JSONスキーマ）
+## 実装ステップ
 
-### tasks.json
-```json
-{
-  "tasks": [{
-    "id": "uuid",
-    "title": "タスク名",
-    "completed": false,
-    "isFocused": true,
-    "createdAt": "ISO日時",
-    "completedAt": null
-  }]
-}
-```
+### Step 0: CLAUDE.md 更新
+- [x] タスク記録ルールをカスタムインストラクションに追加
 
-### calendar.json
-```json
-{
-  "entries": {
-    "2025-11-27": {
-      "completedCount": 5,
-      "pomodoroCount": 3,
-      "tasks": ["uuid"]
-    }
-  }
-}
-```
+### Step 0.5: 既存データエクスポート機能（現システム）
+- [x] 現在のExpressサーバーにエクスポートAPIを追加
+- [x] 全データをJSON形式でダウンロードできるようにする
+- [x] ユーザーが既存データをバックアップ
 
-### reflections.json
-```json
-{
-  "reflections": [{
-    "id": "uuid",
-    "date": "2025-11-27",
-    "targetDate": "2025-11-26",
-    "content": "振り返り内容",
-    "createdAt": "ISO日時"
-  }]
-}
-```
+### Step 1: IndexedDB ユーティリティ作成
+- [ ] `app/src/utils/indexedDB.ts` 新規作成
+- [ ] openDatabase, getAll, get, put, delete 関数実装
+- [ ] DBスキーマ定義（7つのオブジェクトストア）
 
-### settings.json
-```json
-{
-  "timer": { "focusDuration": 1500, "breakDuration": 600 },
-  "youtube": {
-    "focusUrl": "",
-    "breakUrl": "",
-    "apiKey": null,
-    "useApi": false
-  }
-}
-```
+### Step 2: dataApi.ts 書き換え
+- [ ] fetch('/api/...') → IndexedDB操作に置き換え
+- [ ] 全関数シグネチャは維持（フック側変更不要）
+
+### Step 3: エクスポート/インポート機能追加
+- [ ] `app/src/utils/dataExport.ts` 新規作成
+- [ ] exportAllData(): 全データJSONダウンロード
+- [ ] importAllData(): JSONファイルから復元
+
+### Step 4: データ管理UI追加
+- [ ] `app/src/components/Settings/DataManagement.tsx` 新規作成
+- [ ] エクスポート/インポートボタン
+
+### Step 5: 名言データ埋め込み
+- [ ] `app/src/data/defaultQuotes.ts` 新規作成
+- [ ] CSVの内容をTypeScript定数として埋め込み
+
+### Step 6: サーバー関連ファイル整理
+- [ ] app/server/index.ts 削除または移動
+- [ ] package.json のスクリプト整理
+
+### Step 7: Vite設定調整
+- [ ] vite.config.ts からproxy設定削除
+
+### Step 8: テスト・動作確認
+- [ ] 全機能の動作確認
+- [ ] エクスポート/インポートテスト
+- [ ] 静的ビルドで動作確認
 
 ---
 
-## 実装フェーズ
+## 変更対象ファイル一覧
 
-### Phase 1: 基盤構築
-- Vite + React + TypeScript セットアップ
-- Tailwind CSS 導入
-- Express サーバー構築
-- 型定義・データファイル初期化
-
-### Phase 2: タイマー機能
-- useTimer フック実装
-- TimerDisplay / TimerControls コンポーネント
-- モード切り替え、通知機能
-
-### Phase 3: タスク管理
-- useTasks フック実装
-- TaskList / TaskItem / TaskForm / FocusTask
-- API連携でJSON永続化
-
-### Phase 4: YouTube連携
-- YouTubePlayer（iframe埋め込み）
-- YouTubeSettings（URL/APIキー設定）
-- モード連動で動画切り替え
-
-### Phase 5: Contributionカレンダー
-- ContributionCalendar（GitHubスタイル）
-- タスク完了連動でカウント更新
-
-### Phase 6: 振り返り機能
-- ReflectionForm / ReflectionDisplay
-- 朝の判定ロジック
-
-### Phase 7: YouTube API対応（オプション）
-- APIキー設定、IFrame API連携
-
-### Phase 8: 仕上げ
-- UI/UX改善、エラーハンドリング、README更新
-
----
-
-## APIエンドポイント
-
-| メソッド | パス | 説明 |
+| ファイル | 操作 | 内容 |
 |----------|------|------|
-| GET/POST | `/api/tasks` | タスク一覧取得/追加 |
-| PUT/DELETE | `/api/tasks/:id` | タスク更新/削除 |
-| GET/PUT | `/api/calendar/:date` | カレンダーデータ |
-| GET/POST | `/api/reflections` | 振り返り |
-| GET/PUT | `/api/settings` | 設定 |
+| `CLAUDE.md` | 編集 | カスタムインストラクション追加 |
+| `app/src/utils/indexedDB.ts` | 新規 | IndexedDBラッパー |
+| `app/src/utils/dataExport.ts` | 新規 | エクスポート/インポート |
+| `app/src/api/dataApi.ts` | 書換 | fetch → IndexedDB |
+| `app/src/data/defaultQuotes.ts` | 新規 | 名言デフォルトデータ |
+| `app/src/components/Settings/DataManagement.tsx` | 新規 | データ管理UI |
+| `app/server/index.ts` | 削除 | サーバー不要 |
+| `app/package.json` | 編集 | スクリプト整理 |
+| `app/vite.config.ts` | 編集 | proxy削除 |
 
 ---
 
-## 開発コマンド
+## 完了条件
 
-```bash
-npm start      # フロント+バックエンド同時起動
-npm run dev    # フロントエンドのみ
-npm run server # バックエンドのみ
-npm run build  # ビルド
-```
+- [ ] IndexedDBでの全データ操作が動作する
+- [ ] サーバーなしで全機能が動作する
+- [ ] エクスポートでJSONダウンロードできる
+- [ ] インポートでデータ復元できる
+- [ ] 既存データが移行できる
+- [ ] `npm run build` の成果物が静的ホスティングで動作する
+- [ ] CLAUDE.mdにタスク記録ルールが追加されている
+
+---
+
+## 注意事項
+
+- **既存のカスタムフックは変更最小限**（dataApi.tsの中身だけ変更）
+- **型定義は維持**（types/index.tsは変更なし）
+- **UIコンポーネントは基本変更なし**（DataManagement以外）
+
+---
+
+# 過去の計画（アーカイブ）
+
+## 初期開発計画（完了）
+
+### Phase 1-8: 基盤構築〜仕上げ
+※ 初期開発は完了済み。詳細は docs/SPEC.md を参照。

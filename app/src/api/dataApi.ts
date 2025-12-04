@@ -156,3 +156,17 @@ export const fetchMonthlyStats = async (month: string): Promise<MonthlyStats> =>
   const res = await fetch(`${API_BASE}/stats/monthly/${month}`);
   return res.json();
 };
+
+// Export API - 全データをダウンロード
+export const exportAllData = async (): Promise<void> => {
+  const res = await fetch(`${API_BASE}/export`);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `pomodoro-backup-${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};

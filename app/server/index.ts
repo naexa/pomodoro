@@ -403,6 +403,49 @@ app.get('/api/quotes', async (_, res) => {
   }
 });
 
+// Export API - 全データをエクスポート
+app.get('/api/export', async (_, res) => {
+  try {
+    const [tasks, calendar, categories, reflections, settings, taskHistory] = await Promise.all([
+      readJsonFile('tasks.json'),
+      readJsonFile('calendar.json'),
+      readJsonFile('categories.json'),
+      readJsonFile('reflections.json'),
+      readJsonFile('settings.json'),
+      readJsonFile('taskHistory.json'),
+    ]);
+
+    // 名言もエクスポート
+    const csvPath = path.join(DATA_DIR, 'famous_saying.csv');
+    const csvContent = await fs.readFile(csvPath, 'utf-8');
+    const lines = csvContent.trim().split('\n');
+    const quotes = lines.map((line, index) => {
+      const [author, message] = line.split(',');
+      return { id: String(index + 1), author: author.trim(), message: message.trim() };
+    });
+
+    const exportData = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      data: {
+        tasks: tasks.tasks,
+        calendar: calendar.entries,
+        categories: categories.categories,
+        reflections: reflections.reflections,
+        settings,
+        taskHistory: taskHistory.tasks,
+        quotes,
+      },
+    };
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="pomodoro-backup-${new Date().toISOString().split('T')[0]}.json"`);
+    res.json(exportData);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to export data' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

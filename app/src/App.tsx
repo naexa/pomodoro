@@ -11,7 +11,7 @@ import { useCalendar } from './hooks/useCalendar';
 import { useReflection } from './hooks/useReflection';
 import { useCategories } from './hooks/useCategories';
 import { Settings, TimerMode, YouTubeSettings, TimerSettings as TimerSettingsType, CalendarThresholds } from './types';
-import { updateSettings, saveTaskToHistory } from './api/dataApi';
+import { updateSettings, saveTaskToHistory, exportAllData } from './api/dataApi';
 import { formatDate } from './utils/dateUtils';
 
 const DEFAULT_SETTINGS: Settings = {
@@ -151,9 +151,17 @@ const App: FC = () => {
       )}
 
       <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
-          Pomodoro Timer
-        </h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-800">
+            Pomodoro Timer
+          </h1>
+          <button
+            onClick={exportAllData}
+            className="px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700"
+          >
+            データをエクスポート
+          </button>
+        </div>
 
         {/* Today's Reflection Display */}
         {todayReflection && (
