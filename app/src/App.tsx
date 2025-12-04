@@ -187,14 +187,6 @@ const App: FC = () => {
           </div>
         )}
 
-        {/* Focus Task Display */}
-        {focusedTask && (
-          <div className="mb-4 p-3 bg-blue-100 rounded-lg text-center">
-            <span className="text-blue-600 font-semibold">集中中: </span>
-            <span className="text-blue-800 font-bold">{focusedTask.title}</span>
-          </div>
-        )}
-
         {/* Top Section: Timer & YouTube */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-stretch">
           {/* Timer Section */}

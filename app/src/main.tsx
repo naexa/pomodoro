@@ -5,6 +5,7 @@ import { PomodoroProvider } from './contexts/PomodoroContext'
 import { AppLayout } from './layouts/AppLayout'
 import App from './App.tsx'
 import { DailyLogPage } from './pages/DailyLogPage.tsx'
+import { HistoryPage } from './pages/HistoryPage.tsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -15,6 +16,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Routes>
             <Route path="/" element={<App />} />
             <Route path="/log" element={<DailyLogPage />} />
+            <Route path="/history" element={<HistoryPage />} />
           </Routes>
         </AppLayout>
       </PomodoroProvider>

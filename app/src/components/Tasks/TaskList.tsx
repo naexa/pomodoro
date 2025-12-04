@@ -1,4 +1,5 @@
 import { FC, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   DndContext,
   closestCenter,
@@ -98,7 +99,7 @@ export const TaskList: FC<TaskListProps> = ({
 
   return (
     <div className="space-y-4">
-      <FocusTask task={focusedTask} />
+      <FocusTask task={focusedTask} onComplete={onToggleComplete} />
 
       <TaskForm
         onAdd={onAdd}
@@ -178,13 +179,13 @@ export const TaskList: FC<TaskListProps> = ({
             </button>
           )}
           {isExpanded && hasMoreThanMax && (
-            <a
-              href="#/history"
+            <Link
+              to="/history"
               className="w-full py-2 text-sm text-primary hover:text-primary-hover hover:bg-primary/5 rounded-lg transition-colors flex items-center justify-center gap-1"
             >
               <span>履歴を見る（全{completedTasks.length}件）</span>
               <span>→</span>
-            </a>
+            </Link>
           )}
         </div>
       )}
