@@ -39,7 +39,7 @@
 
 ## 技術仕様書
 
-開発者向けの詳細な仕様書は [SPEC.md](./app/SPEC.md) を参照してください。
+開発者向けの詳細な仕様書は [docs/SPEC.md](./docs/SPEC.md) を参照してください。
 
 - API仕様
 - データ構造（TypeScript型定義）
@@ -190,13 +190,15 @@ npm run build  # 本番ビルド
 
 ```
 pomodoro/
+├── docs/                        # ドキュメント
+│   └── SPEC.md                  # 技術仕様書
+│
 └── app/                         # アプリケーション本体
     ├── package.json
     ├── vite.config.ts
     ├── tailwind.config.js
     ├── tsconfig.json
     ├── index.html
-    ├── SPEC.md                  # 技術仕様書
     │
     ├── data/                    # データ永続化（.gitignore対象）
     │   ├── tasks.json
