@@ -1,6 +1,6 @@
 import { FC, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Timer, TimerSettings } from './components/Timer';
+import { TimerDisplay, TimerControls, TimerSettings } from './components/Timer';
 import { TaskList } from './components/Tasks';
 import { YouTubeSection } from './components/YouTube';
 import { ContributionCalendar } from './components/Calendar';
@@ -10,30 +10,36 @@ import { useTasks } from './hooks/useTasks';
 import { useCalendar } from './hooks/useCalendar';
 import { useReflection } from './hooks/useReflection';
 import { useCategories } from './hooks/useCategories';
-import { Settings, TimerMode, YouTubeSettings, TimerSettings as TimerSettingsType, CalendarThresholds } from './types';
-import { updateSettings, saveTaskToHistory, exportAllData, fetchSettings } from './api/dataApi';
+import { usePomodoroContext } from './contexts/PomodoroContext';
+import { YouTubeSettings, TimerSettings as TimerSettingsType, CalendarThresholds } from './types';
+import { saveTaskToHistory, exportAllData } from './api/dataApi';
 import { selectAndImportFile } from './utils/dataExport';
 import { formatDate } from './utils/dateUtils';
 
-const DEFAULT_SETTINGS: Settings = {
-  timer: {
-    focusDuration: 1500,
-    breakDuration: 300,
-    longBreakDuration: 900,  // 15分
-    setsPerRound: 4,         // 4セット
-  },
-  youtube: {
-    focusUrls: [],
-    breakUrls: [],
-  },
-};
-
 const App: FC = () => {
-  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
-  const [timerMode, setTimerMode] = useState<TimerMode>('focus');
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [showReflectionForm, setShowReflectionForm] = useState(false);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
+
+  // Context からタイマー状態と設定を取得
+  const {
+    timeLeft,
+    isRunning,
+    isPaused,
+    mode,
+    currentSet,
+    totalSets,
+    start,
+    pause,
+    resume,
+    reset,
+    resetAll,
+    switchMode,
+    setYoutubeUrl,
+    settings,
+    updateSettings,
+    registerPomodoroCompleteCallback,
+    registerRoundCompleteCallback,
+  } = usePomodoroContext();
 
   const {
     tasks,
@@ -57,37 +63,32 @@ const App: FC = () => {
     if (Notification.permission === 'default') {
       Notification.requestPermission();
     }
-
-    fetchSettings()
-      .then((data) => setSettings(data))
-      .catch(() => console.log('Using default settings'));
   }, []);
 
   useEffect(() => {
-    // Wait for reflections to load before checking if we need the form
     if (!reflectionLoading && needsReflection()) {
       setShowReflectionForm(true);
     }
   }, [reflectionLoading, needsReflection]);
 
-  const handleModeChange = (mode: TimerMode) => {
-    setTimerMode(mode);
-  };
+  // ポモドーロ完了時のコールバック登録
+  useEffect(() => {
+    registerPomodoroCompleteCallback(() => {
+      incrementPomodoro();
+    });
+  }, [registerPomodoroCompleteCallback, incrementPomodoro]);
 
-  const handlePomodoroComplete = () => {
-    incrementPomodoro();
-  };
-
-  const handleRoundComplete = () => {
-    // YouTubeを停止（isTimerRunning=falseにする）
-    setIsTimerRunning(false);
-  };
+  // ラウンド完了時のコールバック登録
+  useEffect(() => {
+    registerRoundCompleteCallback(() => {
+      // 全セット完了時の処理
+    });
+  }, [registerRoundCompleteCallback]);
 
   const handleTaskComplete = async (id: string) => {
     const task = tasks.find((t) => t.id === id);
     if (task && !task.completed) {
       await incrementCompleted(id);
-      // タスク履歴に保存（エラーでも続行）
       try {
         const today = formatDate(new Date());
         const completedTask = {
@@ -105,7 +106,6 @@ const App: FC = () => {
 
   const handleYouTubeSettingsSave = async (youtubeSettings: YouTubeSettings) => {
     const newSettings = { ...settings, youtube: youtubeSettings };
-    setSettings(newSettings);
     await updateSettings(newSettings);
   };
 
@@ -114,7 +114,6 @@ const App: FC = () => {
       ...settings,
       timer: timerSettings,
     };
-    setSettings(newSettings);
     await updateSettings(newSettings);
   };
 
@@ -123,7 +122,6 @@ const App: FC = () => {
       ...settings,
       calendarThresholds: thresholds,
     };
-    setSettings(newSettings);
     await updateSettings(newSettings);
   };
 
@@ -131,6 +129,8 @@ const App: FC = () => {
     await addReflection(content);
     setShowReflectionForm(false);
   };
+
+  const isLastSet = currentSet >= totalSets;
 
   return (
     <div className="min-h-screen bg-bg-main text-text-main selection:bg-primary/20">
@@ -223,16 +223,35 @@ const App: FC = () => {
               />
             </div>
             <div className="flex-1">
-              <Timer
-                focusDuration={settings.timer.focusDuration}
-                breakDuration={settings.timer.breakDuration}
-                longBreakDuration={settings.timer.longBreakDuration}
-                setsPerRound={settings.timer.setsPerRound}
-                onModeChange={handleModeChange}
-                onPomodoroComplete={handlePomodoroComplete}
-                onRunningChange={setIsTimerRunning}
-                onRoundComplete={handleRoundComplete}
-              />
+              {/* Timer Component inline - using context state */}
+              <div
+                className={`h-full flex flex-col justify-center p-8 rounded-3xl shadow-soft backdrop-blur-xl transition-colors duration-500 ${
+                  mode === 'focus' ? 'bg-white/80 border border-white/50' : 'bg-green-50/80 border border-green-100/50'
+                }`}
+              >
+                {/* セット表示 */}
+                <div className="text-center mb-2">
+                  <span className="text-sm text-gray-500">
+                    セット {currentSet} / {totalSets}
+                    {mode === 'break' && isLastSet && (
+                      <span className="ml-2 text-green-600 font-medium">（長め休憩）</span>
+                    )}
+                  </span>
+                </div>
+
+                <TimerDisplay timeLeft={timeLeft} mode={mode} />
+
+                <TimerControls
+                  isRunning={isRunning}
+                  isPaused={isPaused}
+                  onStart={start}
+                  onPause={pause}
+                  onResume={resume}
+                  onReset={reset}
+                  onResetAll={resetAll}
+                  onSwitchMode={() => switchMode()}
+                />
+              </div>
             </div>
           </div>
 
@@ -243,11 +262,11 @@ const App: FC = () => {
             </div>
             <div className="bg-white p-8 rounded-3xl shadow-soft border border-gray-100 flex-1 flex flex-col justify-center">
               <YouTubeSection
-                mode={timerMode}
-                isTimerRunning={isTimerRunning}
+                mode={mode}
                 focusUrls={settings.youtube.focusUrls}
                 breakUrls={settings.youtube.breakUrls}
                 onSettingsSave={handleYouTubeSettingsSave}
+                onUrlChange={setYoutubeUrl}
               />
             </div>
           </div>
@@ -286,7 +305,6 @@ const App: FC = () => {
             <h2 className="text-xl font-semibold text-gray-800">Contribution Calendar</h2>
             <Link
               to="/log"
-              target="_blank"
               className="text-sm text-blue-500 hover:text-blue-600"
             >
               日別ログを見る →

@@ -1,6 +1,93 @@
 # ポモドーロタイマーアプリ 実装計画
 
-## 現在の計画: IndexedDB移行 + エクスポート/インポート機能
+## 過去の計画: Portal方式YouTubeプレイヤー（完了）
+
+### 目的
+ページ遷移時にYouTubeプレイヤーを再ロードせず、シームレスに再生継続する
+
+### 背景
+- フローティングミニプレイヤーは実装済み（タイマー継続OK）
+- ただしYouTubeは別々のiframeで管理されており、遷移時に再ロードが発生
+- ユーザー体験向上のため、単一iframeでの実装に変更
+
+### 問題点（v1実装）
+- AppLayout内でYouTubePlayerを直接レンダリングしていた
+- `isHomePage`が変わるとstyleが大きく変化し、Reactが再レンダリング
+- `/log` → `/` 遷移時に`playerPosition`がnullになり、iframeが再作成される
+- widgetidが1→2に変わる（再ロード発生）
+
+### 解決策: createPortal + 固定コンテナ方式
+1. `index.html`に`#youtube-player-root`を追加（Reactの外）
+2. `createPortal`でYouTubePlayerをそこにレンダリング
+3. CSSクラスで位置切り替え（DOM再作成なし）
+4. iframeは一度作成されたら破棄されない
+
+### 実装ステップ
+
+#### Step 1: index.html修正
+- [x] `#youtube-player-root` div追加
+
+#### Step 2: index.css修正
+- [x] `.youtube-position-home` / `.youtube-position-mini` / `.youtube-position-hidden` クラス追加
+
+#### Step 3: YouTubePlayerPortal.tsx新規作成
+- [x] `createPortal`でbody直下に描画
+- [x] CSSクラスで位置制御
+
+#### Step 4: AppLayout.tsx修正
+- [x] YouTubePlayer直接レンダリングを削除
+- [x] YouTubePlayerPortal使用に変更
+
+#### Step 5: ビルド・動作確認
+- [x] TypeScriptエラーなし
+- [x] ビルド成功
+- [x] 両方向遷移でwidgetid=1維持確認
+
+---
+
+## 変更対象ファイル
+
+| ファイル | 操作 | 内容 |
+|----------|------|------|
+| `app/index.html` | 編集 | `#youtube-player-root` div追加 |
+| `app/src/index.css` | 編集 | 位置制御CSSクラス追加 |
+| `app/src/components/YouTube/YouTubePlayerPortal.tsx` | 新規 | Portal経由描画コンポーネント |
+| `app/src/components/YouTube/index.ts` | 編集 | エクスポート追加 |
+| `app/src/layouts/AppLayout.tsx` | 編集 | Portal使用に変更 |
+
+---
+
+## 完了条件
+
+- [x] `/`でタイマー開始後、`/log`に遷移してもYouTube再ロードなし（widgetid維持）
+- [x] `/log`でミニプレイヤーにYouTubeが小さく表示される
+- [x] `/`に戻ってもYouTube再ロードなし（widgetid維持）
+- [x] 音声が途切れずに継続する
+- [x] ビルド成功
+
+### 追加修正（2024/12/04）
+初回実装後、`/log` → `/` 遷移時にYouTubeがリロードされる問題が残っていた。
+
+**原因**: Reactの再レンダリング時にcontainerRef.currentが新しいDOMを指すため、iframeが再作成されていた。
+
+**解決策**: YouTubePlayerPortalを完全にReact外で管理するように変更：
+- グローバル変数でプレイヤーインスタンス、コンテナ、videoIdを管理
+- DOM操作でコンテナを作成・更新
+- Reactコンポーネントは状態監視とDOM更新のトリガーのみ担当
+
+### 追加修正（2024/12/04 #2）
+リロード時にYouTubeが「読み込み中」のまま止まる問題を修正。
+
+**原因**: `onReady`コールバック内でタイマー停止時に`pauseVideo()`を呼ぶと、YouTubeがバッファリング状態で止まってしまう。
+
+**解決策**:
+- `onReady`時に`pauseVideo()`を呼ばない
+- `autoplay=0`と`start=XX`パラメータで停止状態と再生位置を設定
+- 再生時のみ`playVideo()`を呼ぶ
+
+---
+
+## 過去の計画: IndexedDB移行 + エクスポート/インポート機能（完了）
 
 ### 目的
 - サーバーレス（静的ホスティング）対応のためIndexedDBへ移行

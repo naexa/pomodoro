@@ -1,15 +1,14 @@
 import { FC, useState, useEffect, useRef } from 'react';
 import { TimerMode, YouTubeSettings as YouTubeSettingsType } from '../../types';
-import { YouTubePlayer } from './YouTubePlayer';
 import { YouTubeSettings } from './YouTubeSettings';
 import { QuoteDisplay } from '../Quote';
 
 interface YouTubeSectionProps {
   mode: TimerMode;
-  isTimerRunning: boolean;
   focusUrls: string[];
   breakUrls: string[];
   onSettingsSave: (settings: YouTubeSettingsType) => void;
+  onUrlChange?: (url: string) => void;
 }
 
 // ランダムに1つ選択する関数（現在のURLを除外して選択）
@@ -27,10 +26,10 @@ const getRandomUrl = (urls: string[], excludeUrl?: string): string => {
 
 export const YouTubeSection: FC<YouTubeSectionProps> = ({
   mode,
-  isTimerRunning,
   focusUrls,
   breakUrls,
   onSettingsSave,
+  onUrlChange,
 }) => {
   const [currentUrl, setCurrentUrl] = useState('');
   const prevModeRef = useRef(mode);
@@ -56,6 +55,11 @@ export const YouTubeSection: FC<YouTubeSectionProps> = ({
       }
     }
   }, [focusUrls, breakUrls, mode, currentUrl]);
+
+  // URLが変わった時にコールバックを呼ぶ
+  useEffect(() => {
+    onUrlChange?.(currentUrl);
+  }, [currentUrl, onUrlChange]);
 
   const currentUrls = mode === 'focus' ? focusUrls : breakUrls;
 
@@ -100,7 +104,8 @@ export const YouTubeSection: FC<YouTubeSectionProps> = ({
         </div>
       </div>
 
-      <YouTubePlayer url={currentUrl} isPlaying={isTimerRunning} />
+      {/* YouTubeプレイヤー用プレースホルダー - AppLayoutからportalで挿入される */}
+      <div id="youtube-player-portal" className="aspect-video rounded-lg overflow-hidden bg-black" />
 
       {/* 名言表示（常に表示） */}
       <div className="pt-4 border-t border-gray-100">

@@ -30,3 +30,58 @@ body {
   color: var(--color-text-main);
   -webkit-font-smoothing: antialiased;
 }
+
+/* Mini Player Animation */
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out forwards;
+}
+
+/* YouTube Player Portal Position Classes */
+#youtube-player-root {
+  pointer-events: none;
+}
+
+#youtube-player-root > div {
+  pointer-events: auto;
+}
+
+#youtube-player-element {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.youtube-position-home {
+  position: absolute;
+  z-index: 10;
+  transition: all 0.3s ease-in-out;
+}
+
+.youtube-position-mini {
+  position: fixed;
+  bottom: 44px;
+  right: 24px;
+  width: 264px;
+  height: 84px;
+  z-index: 51;
+  transition: all 0.3s ease-in-out;
+}
+
+.youtube-position-hidden {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}

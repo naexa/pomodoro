@@ -40,6 +40,11 @@ interface YTPlayer {
 const YOUTUBE_POSITION_KEY = 'pomodoro_youtube_position';
 const YOUTUBE_VIDEO_KEY = 'pomodoro_youtube_video';
 
+// グローバル変数でプレイヤーインスタンスとvideoIdを管理（StrictMode対策）
+let globalPlayer: YTPlayer | null = null;
+let globalVideoId: string | null = null;
+let globalContainerEl: HTMLDivElement | null = null;
+
 export const YouTubePlayer: FC<YouTubePlayerProps> = ({ url, isPlaying }) => {
   const playerRef = useRef<YTPlayer | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -51,26 +56,26 @@ export const YouTubePlayer: FC<YouTubePlayerProps> = ({ url, isPlaying }) => {
 
   // 再生位置を保存
   const savePosition = useCallback(() => {
-    if (playerRef.current && videoId) {
+    if (globalPlayer && globalVideoId) {
       try {
-        const currentTime = playerRef.current.getCurrentTime();
+        const currentTime = globalPlayer.getCurrentTime();
         sessionStorage.setItem(YOUTUBE_POSITION_KEY, currentTime.toString());
-        sessionStorage.setItem(YOUTUBE_VIDEO_KEY, videoId);
+        sessionStorage.setItem(YOUTUBE_VIDEO_KEY, globalVideoId);
       } catch (e) {
         // Player might not be ready
       }
     }
-  }, [videoId]);
+  }, []);
 
-  // 保存された再生位置を取得
-  const getSavedPosition = useCallback((): number => {
+  // 保存された再生位置を取得（videoIdをパラメータで受け取る）
+  const getSavedPosition = useCallback((targetVideoId: string): number => {
     const savedVideo = sessionStorage.getItem(YOUTUBE_VIDEO_KEY);
     const savedPosition = sessionStorage.getItem(YOUTUBE_POSITION_KEY);
-    if (savedVideo === videoId && savedPosition) {
+    if (savedVideo === targetVideoId && savedPosition) {
       return parseFloat(savedPosition);
     }
     return 0;
-  }, [videoId]);
+  }, []);
 
   // YouTube API読み込み
   useEffect(() => {
@@ -92,32 +97,66 @@ export const YouTubePlayer: FC<YouTubePlayerProps> = ({ url, isPlaying }) => {
   useEffect(() => {
     if (!videoId || !containerRef.current) return;
 
+    // 同じvideoIdで既にグローバルプレイヤーが存在する場合
+    if (globalVideoId === videoId && globalPlayer) {
+      // playerRefを同期
+      playerRef.current = globalPlayer;
+      isPlayerReady.current = true;
+
+      // コンテナが変わった場合、iframeを移動
+      if (globalContainerEl && globalContainerEl !== containerRef.current) {
+        const iframe = globalContainerEl.querySelector('iframe');
+        if (iframe) {
+          containerRef.current.appendChild(iframe);
+          globalContainerEl = containerRef.current;
+        }
+      }
+      return;
+    }
+
     const initPlayer = () => {
       if (!window.YT || !window.YT.Player) {
         setTimeout(initPlayer, 100);
         return;
       }
 
-      // 既存プレイヤーを破棄
-      if (playerRef.current) {
-        savePosition();
+      // 既存グローバルプレイヤーを破棄（videoIdが変わった場合のみ）
+      if (globalPlayer && globalVideoId !== videoId) {
+        // 現在の再生位置を保存（古いvideoIdで）
         try {
-          playerRef.current.pauseVideo();
+          const currentTime = globalPlayer.getCurrentTime();
+          if (globalVideoId) {
+            sessionStorage.setItem(YOUTUBE_POSITION_KEY, currentTime.toString());
+            sessionStorage.setItem(YOUTUBE_VIDEO_KEY, globalVideoId);
+          }
         } catch (e) {
           // Ignore
         }
-        playerRef.current.destroy();
+        try {
+          globalPlayer.pauseVideo();
+        } catch (e) {
+          // Ignore
+        }
+        globalPlayer.destroy();
+        globalPlayer = null;
+        globalVideoId = null;
         playerRef.current = null;
         isPlayerReady.current = false;
+      }
+
+      // 既にプレイヤーが存在する場合はスキップ
+      if (globalPlayer) {
+        return;
       }
 
       // コンテナにIDを設定
       const playerId = 'youtube-player';
       containerRef.current!.innerHTML = `<div id="${playerId}"></div>`;
+      globalContainerEl = containerRef.current;
 
-      const savedPosition = getSavedPosition();
+      const savedPosition = getSavedPosition(videoId);
 
-      playerRef.current = new window.YT.Player(playerId, {
+      globalPlayer = new window.YT.Player(playerId, {
         videoId,
         width: '100%',
         height: '100%',
@@ -130,6 +169,7 @@ export const YouTubePlayer: FC<YouTubePlayerProps> = ({ url, isPlaying }) => {
         events: {
           onReady: (event: { target: YTPlayer }) => {
             isPlayerReady.current = true;
+            playerRef.current = globalPlayer;
             // iframeにスタイルを適用
             const iframe = containerRef.current?.querySelector('iframe');
             if (iframe) {
@@ -152,21 +192,30 @@ export const YouTubePlayer: FC<YouTubePlayerProps> = ({ url, isPlaying }) => {
           },
         },
       } as any);
+
+      globalVideoId = videoId;
+      playerRef.current = globalPlayer;
     };
 
     initPlayer();
 
     return () => {
-      if (playerRef.current) {
-        savePosition();
+      // クリーンアップではプレイヤーを破棄しない（位置保存のみ）
+      if (globalPlayer) {
         try {
-          playerRef.current.pauseVideo();
+          const currentTime = globalPlayer.getCurrentTime();
+          if (globalVideoId) {
+            sessionStorage.setItem(YOUTUBE_POSITION_KEY, currentTime.toString());
+            sessionStorage.setItem(YOUTUBE_VIDEO_KEY, globalVideoId);
+          }
         } catch (e) {
           // Ignore
         }
       }
     };
-  }, [videoId, getSavedPosition, savePosition]);
+  // videoIdが変わった時だけプレイヤーを再初期化
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoId]);
 
   // 再生/一時停止制御
   useEffect(() => {
@@ -229,7 +278,7 @@ export const YouTubePlayer: FC<YouTubePlayerProps> = ({ url, isPlaying }) => {
   }
 
   return (
-    <div className="aspect-video rounded-lg overflow-hidden bg-black relative">
+    <div className="w-full h-full rounded-lg overflow-hidden bg-black relative">
       <div ref={containerRef} className="absolute inset-0" />
       {!isPlaying && (
         <div className="absolute inset-0 bg-gray-800 bg-opacity-80 flex items-center justify-center pointer-events-none">
