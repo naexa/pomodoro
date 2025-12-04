@@ -133,7 +133,7 @@ const App: FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-bg-main text-text-main selection:bg-primary/20">
       {showReflectionForm && (
         <ReflectionForm
           onSubmit={handleReflectionSubmit}
@@ -150,15 +150,15 @@ const App: FC = () => {
         />
       )}
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-4 py-12 max-w-5xl">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">
-            Pomodoro Timer
+          <h1 className="text-4xl font-light tracking-tight text-text-main">
+            Pomodoro<span className="font-bold text-primary">Timer</span>
           </h1>
           <div className="flex gap-2">
             <button
               onClick={exportAllData}
-              className="px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700"
+              className="px-4 py-2 text-sm font-medium text-text-muted hover:text-text-main hover:bg-gray-100 rounded-lg transition-colors"
             >
               エクスポート
             </button>
@@ -174,7 +174,7 @@ const App: FC = () => {
                   }
                 }
               }}
-              className="px-4 py-2 text-sm bg-blue-500 hover:bg-blue-600 rounded-lg text-white"
+              className="px-4 py-2 text-sm font-medium bg-primary text-white hover:bg-primary-hover rounded-lg shadow-lg shadow-primary/30 transition-all"
             >
               インポート
             </button>
@@ -196,82 +196,88 @@ const App: FC = () => {
           </div>
         )}
 
-        {/* Timer Section */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-2">
-            <div className="flex items-center gap-4">
-              <div className="text-sm text-gray-600">
-                今日のポモドーロ:{' '}
-                <span className="font-bold text-red-500">
-                  {todayEntry?.pomodoroCount || 0}
-                </span>{' '}
-                回
+        {/* Top Section: Timer & YouTube */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-stretch">
+          {/* Timer Section */}
+          <div className="flex flex-col">
+            <div className="flex justify-between items-center mb-3 px-2 h-8">
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-text-muted">
+                  今日のポモドーロ:{' '}
+                  <span className="font-bold text-secondary">
+                    {todayEntry?.pomodoroCount || 0}
+                  </span>{' '}
+                  回
+                </div>
+                <div className="text-sm text-text-muted">
+                  完了タスク:{' '}
+                  <span className="font-bold text-green-500">
+                    {todayEntry?.completedCount || 0}
+                  </span>{' '}
+                  件
+                </div>
               </div>
-              <div className="text-sm text-gray-600">
-                完了タスク:{' '}
-                <span className="font-bold text-green-500">
-                  {todayEntry?.completedCount || 0}
-                </span>{' '}
-                件
-              </div>
+              <TimerSettings
+                settings={settings.timer}
+                onSave={handleTimerSettingsSave}
+              />
             </div>
-            <TimerSettings
-              settings={settings.timer}
-              onSave={handleTimerSettingsSave}
-            />
-          </div>
-          <Timer
-            focusDuration={settings.timer.focusDuration}
-            breakDuration={settings.timer.breakDuration}
-            longBreakDuration={settings.timer.longBreakDuration}
-            setsPerRound={settings.timer.setsPerRound}
-            onModeChange={handleModeChange}
-            onPomodoroComplete={handlePomodoroComplete}
-            onRunningChange={setIsTimerRunning}
-            onRoundComplete={handleRoundComplete}
-          />
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Task Management */}
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">今日のタスク</h2>
-              {categories.length > 0 && (
-                <button
-                  onClick={() => setShowCategoryManager(true)}
-                  className="text-sm text-gray-500 hover:text-gray-700"
-                >
-                  カテゴリ管理
-                </button>
-              )}
+            <div className="flex-1">
+              <Timer
+                focusDuration={settings.timer.focusDuration}
+                breakDuration={settings.timer.breakDuration}
+                longBreakDuration={settings.timer.longBreakDuration}
+                setsPerRound={settings.timer.setsPerRound}
+                onModeChange={handleModeChange}
+                onPomodoroComplete={handlePomodoroComplete}
+                onRunningChange={setIsTimerRunning}
+                onRoundComplete={handleRoundComplete}
+              />
             </div>
-            <TaskList
-              tasks={tasks}
-              focusedTask={focusedTask}
-              categories={categories}
-              onAdd={addTask}
-              onEdit={editTask}
-              onToggleComplete={handleTaskComplete}
-              onDelete={removeTask}
-              onSetFocus={setFocusTask}
-              onReorder={reorderTasks}
-              onCreateCategory={addCategory}
-            />
           </div>
 
           {/* YouTube BGM */}
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">YouTube BGM</h2>
-            <YouTubeSection
-              mode={timerMode}
-              isTimerRunning={isTimerRunning}
-              focusUrls={settings.youtube.focusUrls}
-              breakUrls={settings.youtube.breakUrls}
-              onSettingsSave={handleYouTubeSettingsSave}
-            />
+          <div className="flex flex-col">
+            <div className="flex justify-between items-center mb-3 px-2 h-8">
+              <h2 className="text-lg font-semibold text-text-muted">YouTube BGM</h2>
+            </div>
+            <div className="bg-white p-8 rounded-3xl shadow-soft border border-gray-100 flex-1 flex flex-col justify-center">
+              <YouTubeSection
+                mode={timerMode}
+                isTimerRunning={isTimerRunning}
+                focusUrls={settings.youtube.focusUrls}
+                breakUrls={settings.youtube.breakUrls}
+                onSettingsSave={handleYouTubeSettingsSave}
+              />
+            </div>
           </div>
+        </div>
+
+        {/* Task Management (Full Width) */}
+        <div className="bg-white p-8 rounded-3xl shadow-soft border border-gray-100 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-text-main">今日のタスク</h2>
+            {categories.length > 0 && (
+              <button
+                onClick={() => setShowCategoryManager(true)}
+                className="text-sm text-text-muted hover:text-primary transition-colors"
+              >
+                カテゴリ管理
+              </button>
+            )}
+          </div>
+          <TaskList
+            tasks={tasks}
+            focusedTask={focusedTask}
+            categories={categories}
+            onAdd={addTask}
+            onEdit={editTask}
+            onToggleComplete={handleTaskComplete}
+            onDelete={removeTask}
+            onSetFocus={setFocusTask}
+            onReorder={reorderTasks}
+            onCreateCategory={addCategory}
+          />
         </div>
 
         {/* Contribution Calendar */}

@@ -104,10 +104,10 @@ export const TaskList: FC<TaskListProps> = ({
       />
 
       {pendingTasks.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-gray-600">
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wider pl-1">
             未完了 ({pendingTasks.length})
-            <span className="text-xs text-gray-400 font-normal ml-2">
+            <span className="text-xs font-normal ml-2 opacity-60">
               ドラッグで並び替え
             </span>
           </h3>
@@ -120,7 +120,7 @@ export const TaskList: FC<TaskListProps> = ({
               items={pendingTasks.map((t) => t.id)}
               strategy={verticalListSortingStrategy}
             >
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {pendingTasks.map((task) => (
                   <SortableTaskItem
                     key={task.id}
@@ -140,8 +140,8 @@ export const TaskList: FC<TaskListProps> = ({
       )}
 
       {completedTasks.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-gray-600">
+        <div className="space-y-3 pt-4">
+          <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wider pl-1">
             完了 ({completedTasks.length})
           </h3>
           {visibleCompletedTasks.map((task) => (

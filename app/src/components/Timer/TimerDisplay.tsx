@@ -11,18 +11,16 @@ export const TimerDisplay: FC<TimerDisplayProps> = ({ timeLeft, mode }) => {
   return (
     <div className="text-center">
       <div
-        className={`text-8xl font-mono font-bold ${
-          mode === 'focus' ? 'text-red-500' : 'text-green-500'
-        }`}
+        className={`text-9xl font-light tracking-tight tabular-nums transition-colors duration-500 ${mode === 'focus' ? 'text-primary' : 'text-green-500'
+          }`}
       >
         {formatTime(timeLeft)}
       </div>
       <div
-        className={`text-2xl mt-4 font-semibold ${
-          mode === 'focus' ? 'text-red-400' : 'text-green-400'
-        }`}
+        className={`text-xl mt-2 font-medium tracking-widest uppercase transition-colors duration-500 ${mode === 'focus' ? 'text-primary/60' : 'text-green-500/60'
+          }`}
       >
-        {mode === 'focus' ? '集中タイム' : '休憩タイム'}
+        {mode === 'focus' ? 'Focus' : 'Break'}
       </div>
     </div>
   );

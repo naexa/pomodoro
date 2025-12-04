@@ -71,9 +71,8 @@ export const YouTubeSection: FC<YouTubeSectionProps> = ({
       <div className="flex justify-between items-center">
         <div>
           <span
-            className={`text-sm font-medium ${
-              mode === 'focus' ? 'text-red-500' : 'text-green-500'
-            }`}
+            className={`text-sm font-medium ${mode === 'focus' ? 'text-red-500' : 'text-green-500'
+              }`}
           >
             {mode === 'focus' ? '集中用BGM' : '休憩用BGM'}
           </span>
@@ -103,8 +102,10 @@ export const YouTubeSection: FC<YouTubeSectionProps> = ({
 
       <YouTubePlayer url={currentUrl} isPlaying={isTimerRunning} />
 
-      {/* 名言表示（タイマー動作中のみ） */}
-      {isTimerRunning && <QuoteDisplay intervalMs={300000} />}
+      {/* 名言表示（常に表示） */}
+      <div className="pt-4 border-t border-gray-100">
+        <QuoteDisplay intervalMs={300000} />
+      </div>
     </div>
   );
 };

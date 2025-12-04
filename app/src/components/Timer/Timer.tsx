@@ -75,9 +75,8 @@ export const Timer: FC<TimerProps> = ({
 
   return (
     <div
-      className={`p-8 rounded-2xl ${
-        mode === 'focus' ? 'bg-red-50' : 'bg-green-50'
-      }`}
+      className={`h-full flex flex-col justify-center p-8 rounded-3xl shadow-soft backdrop-blur-xl transition-colors duration-500 ${mode === 'focus' ? 'bg-white/80 border border-white/50' : 'bg-green-50/80 border border-green-100/50'
+        }`}
     >
       {/* セット表示 */}
       <div className="text-center mb-2">

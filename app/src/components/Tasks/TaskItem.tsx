@@ -220,43 +220,40 @@ export const TaskItem: FC<TaskItemProps> = ({
 
   return (
     <div
-      className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-300 ${
-        isCompleting
-          ? 'opacity-0 translate-x-8 scale-95'
-          : 'opacity-100 translate-x-0 scale-100'
-      } ${
-        task.isFocused
-          ? 'border-blue-500 bg-blue-50'
+      className={`group flex items-center gap-4 p-4 rounded-xl border transition-all duration-200 ${isCompleting
+          ? 'opacity-0 translate-x-8'
+          : 'opacity-100 translate-x-0'
+        } ${task.isFocused
+          ? 'border-primary/30 bg-primary/5 shadow-md shadow-primary/10'
           : task.completed
-          ? 'border-gray-200 bg-gray-50'
-          : 'border-gray-200 bg-white'
-      } ${isEditing ? 'relative z-50' : ''}`}
+            ? 'border-transparent bg-gray-50/50'
+            : 'border-transparent bg-white shadow-sm hover:shadow-md hover:border-gray-100'
+        } ${isEditing ? 'ring-2 ring-primary/20' : ''}`}
     >
       <input
         ref={checkboxRef}
         type="checkbox"
         checked={task.completed || isCompleting}
         onChange={handleToggleComplete}
-        className="w-5 h-5 rounded border-gray-300 text-green-500 focus:ring-green-500 transition-colors"
+        className="w-6 h-6 rounded-full border-gray-300 text-primary focus:ring-primary/50 transition-all cursor-pointer"
       />
 
       {isEditing ? (
         <div className="flex-1 relative z-50">
-          <div className="flex items-center gap-2 px-2 py-1 border rounded focus-within:ring-2 focus-within:ring-blue-500 bg-white">
+          <div className="flex items-center gap-2 px-3 py-2 border border-primary/30 rounded-lg focus-within:ring-2 focus-within:ring-primary/20 bg-white shadow-sm">
             <input
               ref={editInputRef}
               type="text"
               value={editTitle}
               onChange={handleEditInputChange}
               onBlur={() => {
-                // サジェスト表示中はblurで保存しない
                 if (!showEditSuggestions) {
                   handleSave();
                 }
               }}
               onKeyDown={handleEditKeyDown}
               placeholder="#でカテゴリ設定"
-              className="flex-1 focus:outline-none min-w-0"
+              className="flex-1 focus:outline-none min-w-0 text-text-main placeholder:text-text-muted"
               autoFocus
             />
             {editCategory && (
@@ -272,7 +269,7 @@ export const TaskItem: FC<TaskItemProps> = ({
           {showEditSuggestions && (filteredCategories.length > 0 || showCreateOption) && (
             <div
               ref={editSuggestionsRef}
-              className="absolute z-[100] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-auto"
+              className="absolute z-[100] mt-2 w-full bg-white border border-gray-100 rounded-xl shadow-xl max-h-48 overflow-auto p-1"
             >
               {filteredCategories.map((cat, index) => {
                 const colors = getCategoryColorClasses(cat.color);
@@ -281,12 +278,11 @@ export const TaskItem: FC<TaskItemProps> = ({
                     key={cat.id}
                     type="button"
                     onClick={() => selectEditCategory(cat)}
-                    className={`w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-gray-50 ${
-                      index === editSuggestionIndex ? 'bg-gray-100' : ''
-                    }`}
+                    className={`w-full px-3 py-2 text-left flex items-center gap-2 rounded-lg transition-colors ${index === editSuggestionIndex ? 'bg-gray-50' : 'hover:bg-gray-50'
+                      }`}
                   >
                     <span className={`w-3 h-3 rounded-full ${colors.bg} ${colors.border} border`} />
-                    <span>{cat.name}</span>
+                    <span className="text-sm text-text-main">{cat.name}</span>
                   </button>
                 );
               })}
@@ -294,23 +290,21 @@ export const TaskItem: FC<TaskItemProps> = ({
                 <button
                   type="button"
                   onClick={() => selectEditCategory(null, true)}
-                  className={`w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-gray-50 text-blue-600 ${
-                    editSuggestionIndex === filteredCategories.length ? 'bg-gray-100' : ''
-                  }`}
+                  className={`w-full px-3 py-2 text-left flex items-center gap-2 rounded-lg transition-colors text-primary ${editSuggestionIndex === filteredCategories.length ? 'bg-primary/5' : 'hover:bg-primary/5'
+                    }`}
                 >
                   <span className="text-lg">+</span>
-                  <span>「{hashtagQuery}」を作成</span>
+                  <span className="text-sm">「{hashtagQuery}」を作成</span>
                 </button>
               )}
             </div>
           )}
         </div>
       ) : (
-        <div className="flex-1 flex items-center gap-2 min-w-0">
+        <div className="flex-1 flex items-center gap-3 min-w-0">
           <span
-            className={`truncate ${
-              task.completed ? 'line-through text-gray-400' : 'text-gray-800'
-            }`}
+            className={`truncate text-base font-medium transition-colors ${task.completed ? 'line-through text-text-muted' : 'text-text-main'
+              }`}
           >
             {task.title}
           </span>
@@ -326,14 +320,14 @@ export const TaskItem: FC<TaskItemProps> = ({
               <button
                 type="button"
                 onClick={() => setShowCategoryPicker(!showCategoryPicker)}
-                className="text-xs text-gray-400 hover:text-gray-600 px-1"
+                className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-text-muted hover:text-primary px-2 py-1 rounded-full hover:bg-primary/5"
                 title="カテゴリを設定"
               >
-                +#
+                + Category
               </button>
             )}
             {showCategoryPicker && (
-              <div className="absolute z-20 top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg min-w-32 py-1">
+              <div className="absolute z-20 top-full left-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-xl min-w-[160px] p-1">
                 {categories.map(cat => {
                   const colors = getCategoryColorClasses(cat.color);
                   return (
@@ -341,12 +335,11 @@ export const TaskItem: FC<TaskItemProps> = ({
                       key={cat.id}
                       type="button"
                       onClick={() => handleCategoryChange(cat.id)}
-                      className={`w-full px-3 py-1.5 text-left text-sm flex items-center gap-2 hover:bg-gray-50 ${
-                        cat.id === task.categoryId ? 'bg-gray-100' : ''
-                      }`}
+                      className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 rounded-lg transition-colors ${cat.id === task.categoryId ? 'bg-gray-50' : 'hover:bg-gray-50'
+                        }`}
                     >
                       <span className={`w-2.5 h-2.5 rounded-full ${colors.bg} ${colors.border} border`} />
-                      <span>{cat.name}</span>
+                      <span className="text-text-main">{cat.name}</span>
                     </button>
                   );
                 })}
@@ -356,7 +349,7 @@ export const TaskItem: FC<TaskItemProps> = ({
                     <button
                       type="button"
                       onClick={() => handleCategoryChange(null)}
-                      className="w-full px-3 py-1.5 text-left text-sm text-red-500 hover:bg-red-50"
+                      className="w-full px-3 py-2 text-left text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                     >
                       カテゴリを解除
                     </button>
@@ -368,31 +361,39 @@ export const TaskItem: FC<TaskItemProps> = ({
         </div>
       )}
 
-      <div className="flex gap-2">
+      <div className={`flex gap-1 transition-opacity duration-200 ${isEditing ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
         {!task.completed && (
           <button
             onClick={() => onSetFocus(task.id)}
-            className={`px-2 py-1 text-sm rounded ${
-              task.isFocused
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
+            className={`p-2 rounded-lg transition-colors ${task.isFocused
+              ? 'bg-primary text-white shadow-glow'
+              : 'text-text-muted hover:bg-primary/10 hover:text-primary'
+              }`}
             title={task.isFocused ? 'フォーカス解除' : 'フォーカス'}
           >
-            {task.isFocused ? '★' : '☆'}
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill={task.isFocused ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
           </button>
         )}
         <button
           onClick={() => setIsEditing(true)}
-          className="px-2 py-1 text-sm bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
+          className="p-2 text-text-muted hover:bg-gray-100 hover:text-text-main rounded-lg transition-colors"
+          title="編集"
         >
-          編集
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+          </svg>
         </button>
         <button
           onClick={() => onDelete(task.id)}
-          className="px-2 py-1 text-sm bg-red-100 text-red-600 rounded hover:bg-red-200"
+          className="p-2 text-text-muted hover:bg-red-50 hover:text-red-500 rounded-lg transition-colors"
+          title="削除"
         >
-          削除
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          </svg>
         </button>
       </div>
     </div>

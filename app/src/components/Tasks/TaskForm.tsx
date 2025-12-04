@@ -147,10 +147,10 @@ export const TaskForm: FC<TaskFormProps> = ({ onAdd, categories, onCreateCategor
   }, []);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2">
-      <div className="flex gap-2">
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="flex gap-3">
         <div className="flex-1 relative">
-          <div className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 bg-white">
+          <div className="flex items-center gap-3 px-4 py-3 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50 bg-white shadow-sm transition-all duration-200">
             <input
               ref={inputRef}
               type="text"
@@ -158,7 +158,7 @@ export const TaskForm: FC<TaskFormProps> = ({ onAdd, categories, onCreateCategor
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               placeholder="新しいタスクを入力... #でカテゴリ設定"
-              className="flex-1 focus:outline-none min-w-0"
+              className="flex-1 focus:outline-none min-w-0 text-text-main placeholder:text-text-muted bg-transparent"
             />
             {selectedCategory && (
               <CategoryBadge
@@ -173,7 +173,7 @@ export const TaskForm: FC<TaskFormProps> = ({ onAdd, categories, onCreateCategor
           {showSuggestions && (filteredCategories.length > 0 || showCreateOption) && (
             <div
               ref={suggestionsRef}
-              className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-auto"
+              className="absolute z-10 mt-2 w-full bg-white border border-gray-100 rounded-xl shadow-xl max-h-48 overflow-auto p-1"
             >
               {filteredCategories.map((category, index) => {
                 const colors = getCategoryColorClasses(category.color);
@@ -182,12 +182,11 @@ export const TaskForm: FC<TaskFormProps> = ({ onAdd, categories, onCreateCategor
                     key={category.id}
                     type="button"
                     onClick={() => selectCategory(category)}
-                    className={`w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-gray-50 ${
-                      index === suggestionIndex ? 'bg-gray-100' : ''
-                    }`}
+                    className={`w-full px-3 py-2 text-left flex items-center gap-2 rounded-lg transition-colors ${index === suggestionIndex ? 'bg-gray-50' : 'hover:bg-gray-50'
+                      }`}
                   >
                     <span className={`w-3 h-3 rounded-full ${colors.bg} ${colors.border} border`} />
-                    <span>{category.name}</span>
+                    <span className="text-text-main">{category.name}</span>
                   </button>
                 );
               })}
@@ -195,12 +194,11 @@ export const TaskForm: FC<TaskFormProps> = ({ onAdd, categories, onCreateCategor
                 <button
                   type="button"
                   onClick={() => selectCategory(null, true)}
-                  className={`w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-gray-50 text-blue-600 ${
-                    suggestionIndex === filteredCategories.length ? 'bg-gray-100' : ''
-                  }`}
+                  className={`w-full px-3 py-2 text-left flex items-center gap-2 rounded-lg transition-colors text-primary ${suggestionIndex === filteredCategories.length ? 'bg-primary/5' : 'hover:bg-primary/5'
+                    }`}
                 >
                   <span className="text-lg">+</span>
-                  <span>「{hashtagQuery}」を作成</span>
+                  <span className="text-sm">「{hashtagQuery}」を作成</span>
                 </button>
               )}
             </div>
@@ -209,7 +207,7 @@ export const TaskForm: FC<TaskFormProps> = ({ onAdd, categories, onCreateCategor
 
         <button
           type="submit"
-          className="px-6 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors whitespace-nowrap"
+          className="px-6 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary-hover shadow-lg shadow-primary/30 transition-all duration-200 whitespace-nowrap active:scale-95"
         >
           追加
         </button>
@@ -217,7 +215,7 @@ export const TaskForm: FC<TaskFormProps> = ({ onAdd, categories, onCreateCategor
 
       {/* クイックカテゴリ選択 */}
       {categories.length > 0 && !selectedCategory && (
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-2 px-1">
           {categories.slice(0, 6).map(category => {
             const colors = getCategoryColorClasses(category.color);
             return (
@@ -225,7 +223,7 @@ export const TaskForm: FC<TaskFormProps> = ({ onAdd, categories, onCreateCategor
                 key={category.id}
                 type="button"
                 onClick={() => setSelectedCategory(category)}
-                className={`text-xs px-2 py-1 rounded-full border ${colors.bg} ${colors.text} ${colors.border} hover:opacity-80 transition-opacity`}
+                className={`text-xs px-3 py-1.5 rounded-full border ${colors.bg} ${colors.text} ${colors.border} hover:opacity-80 transition-opacity`}
               >
                 {category.name}
               </button>
