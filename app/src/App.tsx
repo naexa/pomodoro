@@ -11,7 +11,8 @@ import { useCalendar } from './hooks/useCalendar';
 import { useReflection } from './hooks/useReflection';
 import { useCategories } from './hooks/useCategories';
 import { Settings, TimerMode, YouTubeSettings, TimerSettings as TimerSettingsType, CalendarThresholds } from './types';
-import { updateSettings, saveTaskToHistory, exportAllData } from './api/dataApi';
+import { updateSettings, saveTaskToHistory, exportAllData, fetchSettings } from './api/dataApi';
+import { selectAndImportFile } from './utils/dataExport';
 import { formatDate } from './utils/dateUtils';
 
 const DEFAULT_SETTINGS: Settings = {
@@ -57,8 +58,7 @@ const App: FC = () => {
       Notification.requestPermission();
     }
 
-    fetch('/api/settings')
-      .then((res) => res.json())
+    fetchSettings()
       .then((data) => setSettings(data))
       .catch(() => console.log('Using default settings'));
   }, []);
@@ -155,12 +155,30 @@ const App: FC = () => {
           <h1 className="text-3xl font-bold text-gray-800">
             Pomodoro Timer
           </h1>
-          <button
-            onClick={exportAllData}
-            className="px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700"
-          >
-            データをエクスポート
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={exportAllData}
+              className="px-4 py-2 text-sm bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700"
+            >
+              エクスポート
+            </button>
+            <button
+              onClick={async () => {
+                if (confirm('現在のデータを上書きしてインポートしますか？')) {
+                  try {
+                    await selectAndImportFile();
+                    alert('インポートが完了しました。ページを再読み込みします。');
+                    window.location.reload();
+                  } catch (error) {
+                    alert('インポートに失敗しました: ' + (error as Error).message);
+                  }
+                }
+              }}
+              className="px-4 py-2 text-sm bg-blue-500 hover:bg-blue-600 rounded-lg text-white"
+            >
+              インポート
+            </button>
+          </div>
         </div>
 
         {/* Today's Reflection Display */}

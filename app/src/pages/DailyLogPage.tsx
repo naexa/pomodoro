@@ -273,7 +273,7 @@ export const DailyLogPage: FC = () => {
                               <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
                                 {(() => {
                                   let cumulative = 0;
-                                  return allItems.map((item, index) => {
+                                  return allItems.map((item) => {
                                     const percent = totalCount > 0 ? (item.count / totalCount) * 100 : 0;
                                     const strokeDasharray = `${percent} ${100 - percent}`;
                                     const strokeDashoffset = -cumulative;

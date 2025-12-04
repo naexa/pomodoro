@@ -71,38 +71,38 @@ IndexedDB (ブラウザ内蔵DB)
 - [x] ユーザーが既存データをバックアップ
 
 ### Step 1: IndexedDB ユーティリティ作成
-- [ ] `app/src/utils/indexedDB.ts` 新規作成
-- [ ] openDatabase, getAll, get, put, delete 関数実装
-- [ ] DBスキーマ定義（7つのオブジェクトストア）
+- [x] `app/src/utils/indexedDB.ts` 新規作成
+- [x] openDatabase, getAll, get, put, delete 関数実装
+- [x] DBスキーマ定義（7つのオブジェクトストア）
 
 ### Step 2: dataApi.ts 書き換え
-- [ ] fetch('/api/...') → IndexedDB操作に置き換え
-- [ ] 全関数シグネチャは維持（フック側変更不要）
+- [x] fetch('/api/...') → IndexedDB操作に置き換え
+- [x] 全関数シグネチャは維持（フック側変更不要）
 
 ### Step 3: エクスポート/インポート機能追加
-- [ ] `app/src/utils/dataExport.ts` 新規作成
-- [ ] exportAllData(): 全データJSONダウンロード
-- [ ] importAllData(): JSONファイルから復元
+- [x] `app/src/utils/dataExport.ts` 新規作成
+- [x] exportAllData(): 全データJSONダウンロード（dataApi.tsに実装済み）
+- [x] importAllData(): JSONファイルから復元
 
 ### Step 4: データ管理UI追加
-- [ ] `app/src/components/Settings/DataManagement.tsx` 新規作成
-- [ ] エクスポート/インポートボタン
+- [x] App.tsx ヘッダーにエクスポート/インポートボタン追加
+- [x] インポート確認ダイアログ・成功/失敗通知
 
 ### Step 5: 名言データ埋め込み
-- [ ] `app/src/data/defaultQuotes.ts` 新規作成
-- [ ] CSVの内容をTypeScript定数として埋め込み
+- [x] `app/src/data/defaultQuotes.ts` 新規作成
+- [x] CSVの内容をTypeScript定数として埋め込み
 
 ### Step 6: サーバー関連ファイル整理
-- [ ] app/server/index.ts 削除または移動
-- [ ] package.json のスクリプト整理
+- [x] app/server/ を app/_archive/server/ に移動
+- [x] package.json からサーバー関連スクリプト・依存関係を削除
 
 ### Step 7: Vite設定調整
-- [ ] vite.config.ts からproxy設定削除
+- [x] vite.config.ts からproxy設定削除
 
 ### Step 8: テスト・動作確認
-- [ ] 全機能の動作確認
-- [ ] エクスポート/インポートテスト
-- [ ] 静的ビルドで動作確認
+- [x] 全機能の動作確認
+- [x] エクスポート/インポートテスト
+- [x] 静的ビルドで動作確認
 
 ---
 
@@ -124,13 +124,13 @@ IndexedDB (ブラウザ内蔵DB)
 
 ## 完了条件
 
-- [ ] IndexedDBでの全データ操作が動作する
-- [ ] サーバーなしで全機能が動作する
-- [ ] エクスポートでJSONダウンロードできる
-- [ ] インポートでデータ復元できる
-- [ ] 既存データが移行できる
-- [ ] `npm run build` の成果物が静的ホスティングで動作する
-- [ ] CLAUDE.mdにタスク記録ルールが追加されている
+- [x] IndexedDBでの全データ操作が動作する
+- [x] サーバーなしで全機能が動作する
+- [x] エクスポートでJSONダウンロードできる
+- [x] インポートでデータ復元できる
+- [x] 既存データが移行できる
+- [x] `npm run build` の成果物が静的ホスティングで動作する
+- [x] CLAUDE.mdにタスク記録ルールが追加されている
 
 ---
 
