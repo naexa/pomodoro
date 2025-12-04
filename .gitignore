@@ -11,9 +11,8 @@ app/data/*.json
 app/data/famous_saying.csv
 famous_saying.csv
 
-# Project management files (not needed for app)
+# Claude Code files (local only)
 CLAUDE.md
-PLAN.md
 .claude/
 
 # IDE / Editor
