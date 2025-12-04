@@ -75,6 +75,19 @@ const saveTimerState = (state: TimerState) => {
   }
 };
 
+// ランダムに1つ選択する関数（現在のURLを除外して選択）
+const getRandomUrl = (urls: string[], excludeUrl?: string): string => {
+  if (urls.length === 0) return '';
+  if (urls.length === 1) return urls[0];
+
+  // 現在のURLを除外した候補から選ぶ
+  const candidates = excludeUrl ? urls.filter(url => url !== excludeUrl) : urls;
+  if (candidates.length === 0) return urls[0];
+
+  const index = Math.floor(Math.random() * candidates.length);
+  return candidates[index];
+};
+
 // Context型定義
 interface PomodoroContextValue {
   // Timer state
@@ -96,6 +109,7 @@ interface PomodoroContextValue {
   // YouTube state
   youtubeUrl: string;
   setYoutubeUrl: (url: string) => void;
+  switchToNextSong: () => void;
 
   // Settings
   settings: Settings;
@@ -143,17 +157,25 @@ export const PomodoroProvider: FC<PomodoroProviderProps> = ({ children }) => {
   const intervalRef = useRef<number | null>(null);
   const pomodoroCompleteCallbackRef = useRef<(() => void) | null>(null);
   const roundCompleteCallbackRef = useRef<(() => void) | null>(null);
+  const prevModeRef = useRef<TimerMode>(timerState.mode);
+  const settingsLoadedRef = useRef(false);
 
   // 設定読み込み
   useEffect(() => {
     fetchSettings()
       .then((data) => {
         setSettings(data);
+        settingsLoadedRef.current = true;
         // 設定読み込み後、totalSetsを更新
         setTimerState((prev) => ({
           ...prev,
           totalSets: data.timer.setsPerRound,
         }));
+        // 初回URL設定
+        const urls = timerState.mode === 'focus' ? data.youtube.focusUrls : data.youtube.breakUrls;
+        if (urls.length > 0 && !youtubeUrl) {
+          setYoutubeUrl(getRandomUrl(urls));
+        }
       })
       .catch(() => console.log('Using default settings'));
   }, []);
@@ -344,6 +366,28 @@ export const PomodoroProvider: FC<PomodoroProviderProps> = ({ children }) => {
     await saveSettings(newSettings);
   }, []);
 
+  // モードが変わった時にURLを切り替え
+  useEffect(() => {
+    if (!settingsLoadedRef.current) return;
+
+    const currentMode = timerState.mode;
+    if (currentMode !== prevModeRef.current) {
+      const urls = currentMode === 'focus' ? settings.youtube.focusUrls : settings.youtube.breakUrls;
+      if (urls.length > 0) {
+        setYoutubeUrl(getRandomUrl(urls));
+      }
+      prevModeRef.current = currentMode;
+    }
+  }, [timerState.mode, settings.youtube.focusUrls, settings.youtube.breakUrls]);
+
+  // 次の曲に切り替え
+  const switchToNextSong = useCallback(() => {
+    const urls = timerState.mode === 'focus' ? settings.youtube.focusUrls : settings.youtube.breakUrls;
+    if (urls.length > 1) {
+      setYoutubeUrl(getRandomUrl(urls, youtubeUrl));
+    }
+  }, [timerState.mode, settings.youtube.focusUrls, settings.youtube.breakUrls, youtubeUrl]);
+
   const registerPomodoroCompleteCallback = useCallback((cb: () => void) => {
     pomodoroCompleteCallbackRef.current = cb;
   }, []);
@@ -367,6 +411,7 @@ export const PomodoroProvider: FC<PomodoroProviderProps> = ({ children }) => {
     switchMode,
     youtubeUrl,
     setYoutubeUrl,
+    switchToNextSong,
     settings,
     updateSettings: handleUpdateSettings,
     registerPomodoroCompleteCallback,

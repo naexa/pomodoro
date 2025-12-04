@@ -34,7 +34,6 @@ const App: FC = () => {
     reset,
     resetAll,
     switchMode,
-    setYoutubeUrl,
     settings,
     updateSettings,
     registerPomodoroCompleteCallback,
@@ -266,7 +265,6 @@ const App: FC = () => {
                 focusUrls={settings.youtube.focusUrls}
                 breakUrls={settings.youtube.breakUrls}
                 onSettingsSave={handleYouTubeSettingsSave}
-                onUrlChange={setYoutubeUrl}
               />
             </div>
           </div>
