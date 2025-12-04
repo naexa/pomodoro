@@ -549,6 +549,7 @@ author,message
 | GET | `/api/stats/daily/:date` | 日別統計取得 |
 | GET | `/api/stats/monthly/:month` | 月別統計取得 |
 | GET | `/api/quotes` | 名言一覧取得 |
+| GET | `/api/export` | 全データエクスポート |
 
 ### 5.2 エンドポイント詳細
 
@@ -634,6 +635,35 @@ author,message
   "dailyBreakdown": [DailyStats, DailyStats, ...]
 }
 ```
+
+#### GET /api/export
+
+**説明:** 全データをJSON形式でエクスポート。バックアップ用途。
+
+**レスポンスヘッダー:**
+- `Content-Type: application/json`
+- `Content-Disposition: attachment; filename="pomodoro-backup-YYYY-MM-DD.json"`
+
+**レスポンス:**
+```json
+{
+  "version": 1,
+  "exportedAt": "2024-12-04T10:00:00.000Z",
+  "data": {
+    "tasks": [Task, ...],
+    "calendar": { "2024-12-04": CalendarEntry, ... },
+    "categories": [Category, ...],
+    "reflections": [Reflection, ...],
+    "settings": Settings,
+    "taskHistory": { "2024-12-04": [Task, ...], ... },
+    "quotes": [{ "id": "1", "author": "...", "message": "..." }, ...]
+  }
+}
+```
+
+**フロントエンド:**
+- `dataApi.ts` の `exportAllData()` 関数でダウンロード処理
+- App.tsx ヘッダーに「データをエクスポート」ボタン配置
 
 ---
 
