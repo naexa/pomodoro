@@ -12,11 +12,17 @@ interface YouTubeSectionProps {
   onSettingsSave: (settings: YouTubeSettingsType) => void;
 }
 
-// ランダムに1つ選択する関数
-const getRandomUrl = (urls: string[]): string => {
+// ランダムに1つ選択する関数（現在のURLを除外して選択）
+const getRandomUrl = (urls: string[], excludeUrl?: string): string => {
   if (urls.length === 0) return '';
-  const index = Math.floor(Math.random() * urls.length);
-  return urls[index];
+  if (urls.length === 1) return urls[0];
+
+  // 現在のURLを除外した候補から選ぶ
+  const candidates = excludeUrl ? urls.filter(url => url !== excludeUrl) : urls;
+  if (candidates.length === 0) return urls[0];
+
+  const index = Math.floor(Math.random() * candidates.length);
+  return candidates[index];
 };
 
 export const YouTubeSection: FC<YouTubeSectionProps> = ({
@@ -27,25 +33,38 @@ export const YouTubeSection: FC<YouTubeSectionProps> = ({
   onSettingsSave,
 }) => {
   const [currentUrl, setCurrentUrl] = useState('');
-  const prevRunningRef = useRef(false);
   const prevModeRef = useRef(mode);
 
-  // タイマー開始時またはモード切替時にランダムでURLを選択
+  // モードが変わった時だけランダムでURLを選択（一時停止→再開では変えない）
   useEffect(() => {
-    const wasRunning = prevRunningRef.current;
     const prevMode = prevModeRef.current;
 
-    // タイマーが開始された時、またはモードが変わった時
-    if (isTimerRunning && (!wasRunning || mode !== prevMode)) {
+    // モードが変わった時のみ新しいURLを選択
+    if (mode !== prevMode) {
       const urls = mode === 'focus' ? focusUrls : breakUrls;
       setCurrentUrl(getRandomUrl(urls));
+      prevModeRef.current = mode;
     }
+  }, [mode, focusUrls, breakUrls]);
 
-    prevRunningRef.current = isTimerRunning;
-    prevModeRef.current = mode;
-  }, [isTimerRunning, mode, focusUrls, breakUrls]);
+  // 初回またはURLsが読み込まれた時にURLを設定
+  useEffect(() => {
+    if (!currentUrl) {
+      const urls = mode === 'focus' ? focusUrls : breakUrls;
+      if (urls.length > 0) {
+        setCurrentUrl(getRandomUrl(urls));
+      }
+    }
+  }, [focusUrls, breakUrls, mode, currentUrl]);
 
   const currentUrls = mode === 'focus' ? focusUrls : breakUrls;
+
+  // 別の曲に切り替える
+  const handleSwitchSong = () => {
+    const urls = mode === 'focus' ? focusUrls : breakUrls;
+    const newUrl = getRandomUrl(urls, currentUrl);
+    setCurrentUrl(newUrl);
+  };
 
   return (
     <div className="space-y-4">
@@ -62,11 +81,24 @@ export const YouTubeSection: FC<YouTubeSectionProps> = ({
             ({currentUrls.length}曲登録中)
           </span>
         </div>
-        <YouTubeSettings
-          focusUrls={focusUrls}
-          breakUrls={breakUrls}
-          onSave={onSettingsSave}
-        />
+        <div className="flex items-center gap-2">
+          {/* 曲切り替えボタン（2曲以上登録時のみ表示） */}
+          {currentUrls.length > 1 && (
+            <button
+              onClick={handleSwitchSong}
+              className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition flex items-center gap-1"
+              title="別の曲に切り替え"
+            >
+              <span>↻</span>
+              <span>次の曲</span>
+            </button>
+          )}
+          <YouTubeSettings
+            focusUrls={focusUrls}
+            breakUrls={breakUrls}
+            onSave={onSettingsSave}
+          />
+        </div>
       </div>
 
       <YouTubePlayer url={currentUrl} isPlaying={isTimerRunning} />

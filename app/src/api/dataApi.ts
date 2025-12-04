@@ -1,4 +1,4 @@
-import { Task, TasksData, CalendarData, CalendarEntry, ReflectionsData, Reflection, Settings, TaskHistoryData, Quote } from '../types';
+import { Task, TasksData, CalendarData, CalendarEntry, ReflectionsData, Reflection, Settings, TaskHistoryData, Quote, Category, CategoriesData, DailyStats, MonthlyStats } from '../types';
 
 const API_BASE = '/api';
 
@@ -115,5 +115,44 @@ export const fetchDailyLog = async (date: string): Promise<DailyLogResponse> => 
 // Quotes API
 export const fetchQuotes = async (): Promise<{ quotes: Quote[] }> => {
   const res = await fetch(`${API_BASE}/quotes`);
+  return res.json();
+};
+
+// Categories API
+export const fetchCategories = async (): Promise<CategoriesData> => {
+  const res = await fetch(`${API_BASE}/categories`);
+  return res.json();
+};
+
+export const createCategory = async (category: Category): Promise<Category> => {
+  const res = await fetch(`${API_BASE}/categories`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(category),
+  });
+  return res.json();
+};
+
+export const updateCategory = async (id: string, updates: Partial<Category>): Promise<Category> => {
+  const res = await fetch(`${API_BASE}/categories/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  });
+  return res.json();
+};
+
+export const deleteCategory = async (id: string): Promise<void> => {
+  await fetch(`${API_BASE}/categories/${id}`, { method: 'DELETE' });
+};
+
+// Stats API
+export const fetchDailyStats = async (date: string): Promise<DailyStats> => {
+  const res = await fetch(`${API_BASE}/stats/daily/${date}`);
+  return res.json();
+};
+
+export const fetchMonthlyStats = async (month: string): Promise<MonthlyStats> => {
+  const res = await fetch(`${API_BASE}/stats/monthly/${month}`);
   return res.json();
 };

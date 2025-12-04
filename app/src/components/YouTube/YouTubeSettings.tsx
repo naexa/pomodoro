@@ -7,7 +7,7 @@ interface YouTubeSettingsProps {
   onSave: (settings: YouTubeSettingsType) => void;
 }
 
-const MAX_URLS = 3;
+const MAX_URLS = 10;
 
 export const YouTubeSettings: FC<YouTubeSettingsProps> = ({
   focusUrls,

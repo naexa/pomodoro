@@ -1,5 +1,6 @@
 import { FC } from 'react';
 import { format } from 'date-fns';
+import { CalendarThresholds } from '../../types';
 import { getContributionLevel } from '../../utils/dateUtils';
 
 interface CalendarCellProps {
@@ -7,6 +8,7 @@ interface CalendarCellProps {
   pomodoroCount: number;
   completedCount: number;
   onClick?: () => void;
+  thresholds?: CalendarThresholds;
 }
 
 const LEVEL_COLORS = [
@@ -17,8 +19,8 @@ const LEVEL_COLORS = [
   '#216e39', // Level 4
 ];
 
-export const CalendarCell: FC<CalendarCellProps> = ({ date, pomodoroCount, completedCount, onClick }) => {
-  const level = getContributionLevel(pomodoroCount);
+export const CalendarCell: FC<CalendarCellProps> = ({ date, pomodoroCount, completedCount, onClick, thresholds }) => {
+  const level = getContributionLevel(pomodoroCount, thresholds);
   const dateStr = format(date, 'yyyy-MM-dd');
   const displayDate = format(date, 'MMM d, yyyy');
 

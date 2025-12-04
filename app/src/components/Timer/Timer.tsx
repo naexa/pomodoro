@@ -25,15 +25,22 @@ export const Timer: FC<TimerProps> = ({
   onRunningChange,
   onRoundComplete,
 }) => {
-  const handleComplete = (mode: TimerMode) => {
+  const handleComplete = (mode: TimerMode, currentSet: number, totalSets: number) => {
     if (mode === 'focus') {
       onPomodoroComplete?.();
     }
-    // Play notification sound
+    // Play notification
     if (Notification.permission === 'granted') {
-      new Notification(
-        mode === 'focus' ? '集中タイム終了！休憩しましょう' : '休憩終了！集中タイムです'
-      );
+      if (mode === 'focus' && currentSet >= totalSets) {
+        // 最後の集中タイム終了
+        new Notification('🎉 お疲れ様でした！', {
+          body: '全セット完了しました。素晴らしい集中力でした！ゆっくり休憩しましょう。',
+        });
+      } else if (mode === 'focus') {
+        new Notification('集中タイム終了！休憩しましょう');
+      } else {
+        new Notification('休憩終了！集中タイムです');
+      }
     }
   };
 

@@ -5,10 +5,12 @@ import { TaskList } from './components/Tasks';
 import { YouTubeSection } from './components/YouTube';
 import { ContributionCalendar } from './components/Calendar';
 import { ReflectionForm, ReflectionDisplay } from './components/Reflection';
+import { CategoryManager } from './components/Category';
 import { useTasks } from './hooks/useTasks';
 import { useCalendar } from './hooks/useCalendar';
 import { useReflection } from './hooks/useReflection';
-import { Settings, TimerMode, YouTubeSettings, TimerSettings as TimerSettingsType } from './types';
+import { useCategories } from './hooks/useCategories';
+import { Settings, TimerMode, YouTubeSettings, TimerSettings as TimerSettingsType, CalendarThresholds } from './types';
 import { updateSettings, saveTaskToHistory } from './api/dataApi';
 import { formatDate } from './utils/dateUtils';
 
@@ -30,6 +32,7 @@ const App: FC = () => {
   const [timerMode, setTimerMode] = useState<TimerMode>('focus');
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [showReflectionForm, setShowReflectionForm] = useState(false);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
 
   const {
     tasks,
@@ -45,6 +48,7 @@ const App: FC = () => {
   const { data: calendarData, incrementCompleted, incrementPomodoro, getEntry } = useCalendar();
   const todayEntry = getEntry(formatDate(new Date()));
   const { loading: reflectionLoading, addReflection, editReflection, getTodayReflection, needsReflection } = useReflection();
+  const { categories, addCategory, editCategory, removeCategory } = useCategories();
 
   const todayReflection = getTodayReflection();
 
@@ -72,6 +76,11 @@ const App: FC = () => {
 
   const handlePomodoroComplete = () => {
     incrementPomodoro();
+  };
+
+  const handleRoundComplete = () => {
+    // YouTubeを停止（isTimerRunning=falseにする）
+    setIsTimerRunning(false);
   };
 
   const handleTaskComplete = async (id: string) => {
@@ -109,6 +118,15 @@ const App: FC = () => {
     await updateSettings(newSettings);
   };
 
+  const handleCalendarThresholdsChange = async (thresholds: CalendarThresholds) => {
+    const newSettings = {
+      ...settings,
+      calendarThresholds: thresholds,
+    };
+    setSettings(newSettings);
+    await updateSettings(newSettings);
+  };
+
   const handleReflectionSubmit = async (content: string) => {
     await addReflection(content);
     setShowReflectionForm(false);
@@ -123,7 +141,16 @@ const App: FC = () => {
         />
       )}
 
-      <div className="container mx-auto px-4 py-8 max-w-5xl">
+      {showCategoryManager && (
+        <CategoryManager
+          categories={categories}
+          onEdit={editCategory}
+          onDelete={removeCategory}
+          onClose={() => setShowCategoryManager(false)}
+        />
+      )}
+
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
           Pomodoro Timer
         </h1>
@@ -175,6 +202,7 @@ const App: FC = () => {
             onModeChange={handleModeChange}
             onPomodoroComplete={handlePomodoroComplete}
             onRunningChange={setIsTimerRunning}
+            onRoundComplete={handleRoundComplete}
           />
         </div>
 
@@ -182,16 +210,28 @@ const App: FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Task Management */}
           <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">今日のタスク</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">今日のタスク</h2>
+              {categories.length > 0 && (
+                <button
+                  onClick={() => setShowCategoryManager(true)}
+                  className="text-sm text-gray-500 hover:text-gray-700"
+                >
+                  カテゴリ管理
+                </button>
+              )}
+            </div>
             <TaskList
               tasks={tasks}
               focusedTask={focusedTask}
+              categories={categories}
               onAdd={addTask}
               onEdit={editTask}
               onToggleComplete={handleTaskComplete}
               onDelete={removeTask}
               onSetFocus={setFocusTask}
               onReorder={reorderTasks}
+              onCreateCategory={addCategory}
             />
           </div>
 
@@ -220,7 +260,11 @@ const App: FC = () => {
               日別ログを見る →
             </Link>
           </div>
-          <ContributionCalendar data={calendarData} />
+          <ContributionCalendar
+            data={calendarData}
+            thresholds={settings.calendarThresholds}
+            onThresholdsChange={handleCalendarThresholdsChange}
+          />
           <p className="text-xs text-gray-400 mt-2">
             ※ カレンダーの日付をクリックすると詳細ログが開きます
           </p>

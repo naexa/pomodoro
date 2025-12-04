@@ -10,13 +10,58 @@ interface TimerState {
   totalSets: number;
 }
 
+const TIMER_STATE_KEY = 'pomodoro_timer_state';
+const TIMER_TIMESTAMP_KEY = 'pomodoro_timer_timestamp';
+
+// sessionStorageからタイマー状態を復元
+const loadTimerState = (focusDuration: number, _setsPerRound: number): TimerState | null => {
+  try {
+    const saved = sessionStorage.getItem(TIMER_STATE_KEY);
+    const timestamp = sessionStorage.getItem(TIMER_TIMESTAMP_KEY);
+    if (saved && timestamp) {
+      const state = JSON.parse(saved) as TimerState;
+      const savedTime = parseInt(timestamp, 10);
+      const elapsed = Math.floor((Date.now() - savedTime) / 1000);
+
+      // タイマーが動いていた場合、経過時間を引く
+      if (state.isRunning && !state.isPaused) {
+        state.timeLeft = Math.max(0, state.timeLeft - elapsed);
+        // 時間切れの場合は一時停止状態で復元
+        if (state.timeLeft <= 0) {
+          state.timeLeft = state.mode === 'focus' ? focusDuration : 300;
+          state.isRunning = false;
+          state.isPaused = true;
+        } else {
+          // リロード後は一時停止状態で復元
+          state.isRunning = false;
+          state.isPaused = true;
+        }
+      }
+      return state;
+    }
+  } catch (e) {
+    console.error('Failed to load timer state:', e);
+  }
+  return null;
+};
+
+// sessionStorageにタイマー状態を保存
+const saveTimerState = (state: TimerState) => {
+  try {
+    sessionStorage.setItem(TIMER_STATE_KEY, JSON.stringify(state));
+    sessionStorage.setItem(TIMER_TIMESTAMP_KEY, Date.now().toString());
+  } catch (e) {
+    console.error('Failed to save timer state:', e);
+  }
+};
+
 interface UseTimerProps {
   focusDuration: number;
   breakDuration: number;
   longBreakDuration: number;
   setsPerRound: number;
   onModeChange?: (mode: TimerMode) => void;
-  onComplete?: (mode: TimerMode) => void;
+  onComplete?: (mode: TimerMode, currentSet: number, totalSets: number) => void;
   onRoundComplete?: () => void;
 }
 
@@ -29,16 +74,27 @@ export const useTimer = ({
   onComplete,
   onRoundComplete,
 }: UseTimerProps) => {
-  const [state, setState] = useState<TimerState>({
-    timeLeft: focusDuration,
-    isRunning: false,
-    isPaused: false,
-    mode: 'focus',
-    currentSet: 1,
-    totalSets: setsPerRound,
+  const [state, setState] = useState<TimerState>(() => {
+    const saved = loadTimerState(focusDuration, setsPerRound);
+    if (saved) {
+      return { ...saved, totalSets: setsPerRound };
+    }
+    return {
+      timeLeft: focusDuration,
+      isRunning: false,
+      isPaused: false,
+      mode: 'focus',
+      currentSet: 1,
+      totalSets: setsPerRound,
+    };
   });
 
   const intervalRef = useRef<number | null>(null);
+
+  // 状態が変わるたびに保存
+  useEffect(() => {
+    saveTimerState(state);
+  }, [state]);
 
   const clearTimer = useCallback(() => {
     if (intervalRef.current) {
@@ -103,7 +159,7 @@ export const useTimer = ({
       intervalRef.current = window.setInterval(() => {
         setState((prev) => {
           if (prev.timeLeft <= 1) {
-            onComplete?.(prev.mode);
+            onComplete?.(prev.mode, prev.currentSet, prev.totalSets);
 
             if (prev.mode === 'focus') {
               // 集中終了 → 休憩へ

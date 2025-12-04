@@ -22,7 +22,7 @@ export const useTasks = () => {
     loadTasks();
   }, [loadTasks]);
 
-  const addTask = useCallback(async (title: string) => {
+  const addTask = useCallback(async (title: string, categoryId?: string) => {
     const newTask: Task = {
       id: uuidv4(),
       title,
@@ -30,16 +30,21 @@ export const useTasks = () => {
       isFocused: false,
       createdAt: new Date().toISOString(),
       completedAt: null,
+      categoryId,
     };
     await createTask(newTask);
     setTasks((prev) => [...prev, newTask]);
     return newTask;
   }, []);
 
-  const editTask = useCallback(async (id: string, title: string) => {
-    await updateTask(id, { title });
+  const editTask = useCallback(async (id: string, updates: { title?: string; categoryId?: string | null }) => {
+    const updateData: Partial<Task> = {};
+    if (updates.title !== undefined) updateData.title = updates.title;
+    if (updates.categoryId !== undefined) updateData.categoryId = updates.categoryId || undefined;
+
+    await updateTask(id, updateData);
     setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, title } : t))
+      prev.map((t) => (t.id === id ? { ...t, ...updateData } : t))
     );
   }, []);
 
@@ -47,10 +52,17 @@ export const useTasks = () => {
     const task = tasks.find((t) => t.id === id);
     if (!task) return;
 
-    const updates = {
-      completed: !task.completed,
-      completedAt: !task.completed ? new Date().toISOString() : null,
+    const willComplete = !task.completed;
+    const updates: Partial<Task> = {
+      completed: willComplete,
+      completedAt: willComplete ? new Date().toISOString() : null,
     };
+
+    // タスクが完了する場合、フォーカスも解除する
+    if (willComplete && task.isFocused) {
+      updates.isFocused = false;
+    }
+
     await updateTask(id, updates);
     setTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, ...updates } : t))

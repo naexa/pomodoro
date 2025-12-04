@@ -2,10 +2,13 @@ import { FC, useState, useEffect, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { format, addDays, subDays, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { fetchDailyLog, DailyLogResponse } from '../api/dataApi';
+import { fetchDailyLog, DailyLogResponse, fetchDailyStats, fetchMonthlyStats } from '../api/dataApi';
 import { formatDate } from '../utils/dateUtils';
 import { YearlyCalendar } from '../components/Calendar';
 import { useCalendar } from '../hooks/useCalendar';
+import { CategoryBadge } from '../components/Category';
+import { DailyStats, MonthlyStats } from '../types';
+import { useCategories, getCategoryColorClasses } from '../hooks/useCategories';
 
 export const DailyLogPage: FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -16,13 +19,26 @@ export const DailyLogPage: FC = () => {
   });
   const [logData, setLogData] = useState<DailyLogResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dailyStats, setDailyStats] = useState<DailyStats | null>(null);
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null);
+  const [showMonthly, setShowMonthly] = useState(false);
   const { data: calendarData } = useCalendar();
+  const { categories } = useCategories();
 
   const loadLog = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
-      const data = await fetchDailyLog(selectedDate);
+      const [data, stats] = await Promise.all([
+        fetchDailyLog(selectedDate),
+        fetchDailyStats(selectedDate),
+      ]);
       setLogData(data);
+      setDailyStats(stats);
+
+      // 月別統計も取得
+      const month = selectedDate.substring(0, 7); // "2025-12"
+      const monthly = await fetchMonthlyStats(month);
+      setMonthlyStats(monthly);
     } catch (error) {
       console.error('Failed to load daily log:', error);
     } finally {
@@ -155,6 +171,11 @@ export const DailyLogPage: FC = () => {
                     >
                       <span className="text-green-500">✓</span>
                       <span className="flex-1">{task.title}</span>
+                      {task.categoryId && categories.find(c => c.id === task.categoryId) && (
+                        <CategoryBadge
+                          category={categories.find(c => c.id === task.categoryId)!}
+                        />
+                      )}
                       {task.completedAt && (
                         <span className="text-xs text-gray-400">
                           {format(new Date(task.completedAt), 'HH:mm')}
@@ -188,6 +209,314 @@ export const DailyLogPage: FC = () => {
                 <p className="text-gray-400 text-center py-4">
                   この日の振り返りはありません
                 </p>
+              )}
+            </div>
+
+            {/* Category Stats */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-800">
+                  カテゴリ別集計
+                </h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowMonthly(false)}
+                    className={`px-3 py-1 text-sm rounded-lg transition ${
+                      !showMonthly
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    日別
+                  </button>
+                  <button
+                    onClick={() => setShowMonthly(true)}
+                    className={`px-3 py-1 text-sm rounded-lg transition ${
+                      showMonthly
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    月別
+                  </button>
+                </div>
+              </div>
+
+              {!showMonthly ? (
+                // 日別統計
+                <div>
+                  {dailyStats && (dailyStats.categories.length > 0 || dailyStats.uncategorizedCount > 0) ? (
+                    (() => {
+                      const totalCount = dailyStats.categories.reduce((sum, c) => sum + c.completedCount, 0) + dailyStats.uncategorizedCount;
+                      const allItems = [
+                        ...dailyStats.categories.map(stat => ({
+                          id: stat.categoryId,
+                          name: stat.categoryName,
+                          count: stat.completedCount,
+                          color: stat.color,
+                          isUncategorized: false,
+                        })),
+                        ...(dailyStats.uncategorizedCount > 0 ? [{
+                          id: 'uncategorized',
+                          name: '未分類',
+                          count: dailyStats.uncategorizedCount,
+                          color: 'gray',
+                          isUncategorized: true,
+                        }] : []),
+                      ].sort((a, b) => b.count - a.count);
+
+                      return (
+                        <div className="space-y-4">
+                          {/* 円グラフ風の表示 */}
+                          <div className="flex items-center justify-center gap-6">
+                            <div className="relative w-32 h-32">
+                              <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                                {(() => {
+                                  let cumulative = 0;
+                                  return allItems.map((item, index) => {
+                                    const percent = totalCount > 0 ? (item.count / totalCount) * 100 : 0;
+                                    const strokeDasharray = `${percent} ${100 - percent}`;
+                                    const strokeDashoffset = -cumulative;
+                                    cumulative += percent;
+                                    const colorMap: Record<string, string> = {
+                                      red: '#ef4444', orange: '#f97316', yellow: '#eab308',
+                                      green: '#22c55e', blue: '#3b82f6', purple: '#a855f7',
+                                      pink: '#ec4899', indigo: '#6366f1', teal: '#14b8a6',
+                                      cyan: '#06b6d4', gray: '#9ca3af',
+                                    };
+                                    return (
+                                      <circle
+                                        key={item.id}
+                                        cx="18" cy="18" r="15.9155"
+                                        fill="transparent"
+                                        stroke={colorMap[item.color] || '#9ca3af'}
+                                        strokeWidth="3.5"
+                                        strokeDasharray={strokeDasharray}
+                                        strokeDashoffset={strokeDashoffset}
+                                        className="transition-all duration-300"
+                                      />
+                                    );
+                                  });
+                                })()}
+                              </svg>
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="text-center">
+                                  <div className="text-2xl font-bold text-gray-800">{totalCount}</div>
+                                  <div className="text-xs text-gray-500">件</div>
+                                </div>
+                              </div>
+                            </div>
+                            {/* 凡例 */}
+                            <div className="space-y-1">
+                              {allItems.map((item) => {
+                                const colors = item.isUncategorized
+                                  ? { bg: 'bg-gray-200', border: 'border-gray-300' }
+                                  : getCategoryColorClasses(item.color);
+                                const percent = totalCount > 0 ? Math.round((item.count / totalCount) * 100) : 0;
+                                return (
+                                  <div key={item.id} className="flex items-center gap-2 text-sm">
+                                    <span className={`w-3 h-3 rounded-full ${colors.bg} ${colors.border} border`} />
+                                    <span className="text-gray-600">{item.name}</span>
+                                    <span className="font-medium text-gray-800">{item.count}</span>
+                                    <span className="text-gray-400">({percent}%)</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* 横棒グラフ */}
+                          <div className="space-y-2 mt-4">
+                            {allItems.map((item) => {
+                              const colors = item.isUncategorized
+                                ? { bg: 'bg-gray-300', text: 'text-gray-600' }
+                                : getCategoryColorClasses(item.color);
+                              const percent = totalCount > 0 ? (item.count / totalCount) * 100 : 0;
+                              return (
+                                <div key={item.id} className="space-y-1">
+                                  <div className="flex justify-between text-sm">
+                                    <span className={item.isUncategorized ? 'text-gray-500' : 'text-gray-700'}>
+                                      {item.name}
+                                    </span>
+                                    <span className="font-medium text-gray-800">{item.count} 件</span>
+                                  </div>
+                                  <div className="h-4 bg-gray-100 rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full ${colors.bg} rounded-full transition-all duration-500`}
+                                      style={{ width: `${percent}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    <p className="text-gray-400 text-center py-4">
+                      この日のカテゴリ別集計はありません
+                    </p>
+                  )}
+                </div>
+              ) : (
+                // 月別統計
+                <div>
+                  {monthlyStats && (monthlyStats.categories.length > 0 || monthlyStats.uncategorizedCount > 0) ? (
+                    (() => {
+                      const totalCount = monthlyStats.categories.reduce((sum, c) => sum + c.completedCount, 0) + monthlyStats.uncategorizedCount;
+                      const allItems = [
+                        ...monthlyStats.categories.map(stat => ({
+                          id: stat.categoryId,
+                          name: stat.categoryName,
+                          count: stat.completedCount,
+                          color: stat.color,
+                          isUncategorized: false,
+                        })),
+                        ...(monthlyStats.uncategorizedCount > 0 ? [{
+                          id: 'uncategorized',
+                          name: '未分類',
+                          count: monthlyStats.uncategorizedCount,
+                          color: 'gray',
+                          isUncategorized: true,
+                        }] : []),
+                      ].sort((a, b) => b.count - a.count);
+
+                      return (
+                        <div className="space-y-4">
+                          <div className="text-sm text-gray-500 text-center mb-2">
+                            {format(parseISO(selectedDate), 'yyyy年M月', { locale: ja })} の集計
+                          </div>
+
+                          {/* 円グラフ風の表示 */}
+                          <div className="flex items-center justify-center gap-6">
+                            <div className="relative w-32 h-32">
+                              <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                                {(() => {
+                                  let cumulative = 0;
+                                  return allItems.map((item) => {
+                                    const percent = totalCount > 0 ? (item.count / totalCount) * 100 : 0;
+                                    const strokeDasharray = `${percent} ${100 - percent}`;
+                                    const strokeDashoffset = -cumulative;
+                                    cumulative += percent;
+                                    const colorMap: Record<string, string> = {
+                                      red: '#ef4444', orange: '#f97316', yellow: '#eab308',
+                                      green: '#22c55e', blue: '#3b82f6', purple: '#a855f7',
+                                      pink: '#ec4899', indigo: '#6366f1', teal: '#14b8a6',
+                                      cyan: '#06b6d4', gray: '#9ca3af',
+                                    };
+                                    return (
+                                      <circle
+                                        key={item.id}
+                                        cx="18" cy="18" r="15.9155"
+                                        fill="transparent"
+                                        stroke={colorMap[item.color] || '#9ca3af'}
+                                        strokeWidth="3.5"
+                                        strokeDasharray={strokeDasharray}
+                                        strokeDashoffset={strokeDashoffset}
+                                        className="transition-all duration-300"
+                                      />
+                                    );
+                                  });
+                                })()}
+                              </svg>
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="text-center">
+                                  <div className="text-2xl font-bold text-gray-800">{totalCount}</div>
+                                  <div className="text-xs text-gray-500">件</div>
+                                </div>
+                              </div>
+                            </div>
+                            {/* 凡例 */}
+                            <div className="space-y-1">
+                              {allItems.map((item) => {
+                                const colors = item.isUncategorized
+                                  ? { bg: 'bg-gray-200', border: 'border-gray-300' }
+                                  : getCategoryColorClasses(item.color);
+                                const percent = totalCount > 0 ? Math.round((item.count / totalCount) * 100) : 0;
+                                return (
+                                  <div key={item.id} className="flex items-center gap-2 text-sm">
+                                    <span className={`w-3 h-3 rounded-full ${colors.bg} ${colors.border} border`} />
+                                    <span className="text-gray-600">{item.name}</span>
+                                    <span className="font-medium text-gray-800">{item.count}</span>
+                                    <span className="text-gray-400">({percent}%)</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* 横棒グラフ */}
+                          <div className="space-y-2 mt-4">
+                            {allItems.map((item) => {
+                              const colors = item.isUncategorized
+                                ? { bg: 'bg-gray-300', text: 'text-gray-600' }
+                                : getCategoryColorClasses(item.color);
+                              const percent = totalCount > 0 ? (item.count / totalCount) * 100 : 0;
+                              return (
+                                <div key={item.id} className="space-y-1">
+                                  <div className="flex justify-between text-sm">
+                                    <span className={item.isUncategorized ? 'text-gray-500' : 'text-gray-700'}>
+                                      {item.name}
+                                    </span>
+                                    <span className="font-medium text-gray-800">{item.count} 件</span>
+                                  </div>
+                                  <div className="h-4 bg-gray-100 rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full ${colors.bg} rounded-full transition-all duration-500`}
+                                      style={{ width: `${percent}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* 日別内訳 */}
+                          {monthlyStats.dailyBreakdown.length > 0 && (
+                            <div className="mt-4 pt-4 border-t">
+                              <h3 className="text-sm font-medium text-gray-600 mb-3">日別内訳</h3>
+                              <div className="space-y-2 max-h-64 overflow-y-auto">
+                                {monthlyStats.dailyBreakdown.map((day) => (
+                                  <div
+                                    key={day.date}
+                                    className="flex items-center gap-3 p-2 rounded bg-gray-50 text-sm"
+                                  >
+                                    <span className="w-20 text-gray-500">
+                                      {format(parseISO(day.date), 'M/d (E)', { locale: ja })}
+                                    </span>
+                                    <div className="flex-1 flex flex-wrap gap-1">
+                                      {day.categories.map((cat) => {
+                                        const colors = getCategoryColorClasses(cat.color);
+                                        return (
+                                          <span
+                                            key={cat.categoryId}
+                                            className={`px-2 py-0.5 rounded text-xs ${colors.bg} ${colors.text}`}
+                                          >
+                                            {cat.categoryName}: {cat.completedCount}
+                                          </span>
+                                        );
+                                      })}
+                                      {day.uncategorizedCount > 0 && (
+                                        <span className="px-2 py-0.5 rounded text-xs bg-gray-200 text-gray-600">
+                                          未分類: {day.uncategorizedCount}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    <p className="text-gray-400 text-center py-4">
+                      この月のカテゴリ別集計はありません
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           </div>

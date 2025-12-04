@@ -1,4 +1,4 @@
-import { FC } from 'react';
+import { FC, useState } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -14,7 +14,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Task } from '../../types';
+import { Task, Category } from '../../types';
 import { SortableTaskItem } from './SortableTaskItem';
 import { TaskItem } from './TaskItem';
 import { TaskForm } from './TaskForm';
@@ -23,23 +23,27 @@ import { FocusTask } from './FocusTask';
 interface TaskListProps {
   tasks: Task[];
   focusedTask: Task | undefined;
-  onAdd: (title: string) => void;
-  onEdit: (id: string, title: string) => void;
+  categories: Category[];
+  onAdd: (title: string, categoryId?: string) => void;
+  onEdit: (id: string, updates: { title?: string; categoryId?: string | null }) => void;
   onToggleComplete: (id: string) => void;
   onDelete: (id: string) => void;
   onSetFocus: (id: string) => void;
   onReorder?: (tasks: Task[]) => void;
+  onCreateCategory: (name: string) => Promise<Category>;
 }
 
 export const TaskList: FC<TaskListProps> = ({
   tasks,
   focusedTask,
+  categories,
   onAdd,
   onEdit,
   onToggleComplete,
   onDelete,
   onSetFocus,
   onReorder,
+  onCreateCategory,
 }) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -52,10 +56,26 @@ export const TaskList: FC<TaskListProps> = ({
     })
   );
 
+  const [showAllCompleted, setShowAllCompleted] = useState(false);
+
   const pendingTasks = tasks
     .filter((t) => !t.completed)
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  const completedTasks = tasks.filter((t) => t.completed);
+
+  // 完了タスクを完了日時順でソート（新しい順）
+  const completedTasks = tasks
+    .filter((t) => t.completed)
+    .sort((a, b) => {
+      const aTime = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+      const bTime = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+      return bTime - aTime; // 降順（新しいものが上）
+    });
+
+  // 表示する完了タスク（5件まで、または全件）
+  const visibleCompletedTasks = showAllCompleted
+    ? completedTasks
+    : completedTasks.slice(0, 5);
+  const hiddenCount = completedTasks.length - 5;
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -77,7 +97,11 @@ export const TaskList: FC<TaskListProps> = ({
     <div className="space-y-4">
       <FocusTask task={focusedTask} />
 
-      <TaskForm onAdd={onAdd} />
+      <TaskForm
+        onAdd={onAdd}
+        categories={categories}
+        onCreateCategory={onCreateCategory}
+      />
 
       {pendingTasks.length > 0 && (
         <div className="space-y-2">
@@ -101,10 +125,12 @@ export const TaskList: FC<TaskListProps> = ({
                   <SortableTaskItem
                     key={task.id}
                     task={task}
+                    categories={categories}
                     onToggleComplete={onToggleComplete}
                     onEdit={onEdit}
                     onDelete={onDelete}
                     onSetFocus={onSetFocus}
+                    onCreateCategory={onCreateCategory}
                   />
                 ))}
               </div>
@@ -118,16 +144,36 @@ export const TaskList: FC<TaskListProps> = ({
           <h3 className="text-sm font-semibold text-gray-600">
             完了 ({completedTasks.length})
           </h3>
-          {completedTasks.map((task) => (
+          {visibleCompletedTasks.map((task) => (
             <TaskItem
               key={task.id}
               task={task}
+              categories={categories}
               onToggleComplete={onToggleComplete}
               onEdit={onEdit}
               onDelete={onDelete}
               onSetFocus={onSetFocus}
+              onCreateCategory={onCreateCategory}
             />
           ))}
+          {hiddenCount > 0 && (
+            <button
+              onClick={() => setShowAllCompleted(!showAllCompleted)}
+              className="w-full py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center gap-1"
+            >
+              {showAllCompleted ? (
+                <>
+                  <span>▲</span>
+                  <span>折りたたむ</span>
+                </>
+              ) : (
+                <>
+                  <span>▼</span>
+                  <span>さらに {hiddenCount} 件を表示</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       )}
 

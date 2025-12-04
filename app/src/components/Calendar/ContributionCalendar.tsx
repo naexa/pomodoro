@@ -1,17 +1,20 @@
-import { FC, useMemo } from 'react';
-import { CalendarData } from '../../types';
+import { FC, useMemo, useState } from 'react';
+import { CalendarData, CalendarThresholds } from '../../types';
 import { CalendarCell } from './CalendarCell';
-import { getCalendarDays, formatDate } from '../../utils/dateUtils';
-import { format } from 'date-fns';
+import { getCalendarDays, formatDate, DEFAULT_CALENDAR_THRESHOLDS } from '../../utils/dateUtils';
 
 interface ContributionCalendarProps {
   data: CalendarData;
+  thresholds?: CalendarThresholds;
+  onThresholdsChange?: (thresholds: CalendarThresholds) => void;
 }
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export const ContributionCalendar: FC<ContributionCalendarProps> = ({ data }) => {
+export const ContributionCalendar: FC<ContributionCalendarProps> = ({ data, thresholds, onThresholdsChange }) => {
+  const [showSettings, setShowSettings] = useState(false);
+  const currentThresholds = thresholds || DEFAULT_CALENDAR_THRESHOLDS;
   const days = getCalendarDays(52);
 
   // Group days by week (columns)
@@ -142,6 +145,7 @@ export const ContributionCalendar: FC<ContributionCalendarProps> = ({ data }) =>
                         date={day}
                         pomodoroCount={entry?.pomodoroCount || 0}
                         completedCount={entry?.completedCount || 0}
+                        thresholds={currentThresholds}
                       />
                     );
                   })}
@@ -154,9 +158,19 @@ export const ContributionCalendar: FC<ContributionCalendarProps> = ({ data }) =>
 
       {/* Legend */}
       <div className="flex items-center justify-between mt-3">
-        <span className="text-xs text-gray-400">
-          ※ 色はポモドーロ完了数で決まります（0→1→2→3-4→5+）
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-400">
+            ※ 色はポモドーロ完了数で決まります（0→{currentThresholds.level1}→{currentThresholds.level2}→{currentThresholds.level3}→{currentThresholds.level4}+）
+          </span>
+          {onThresholdsChange && (
+            <button
+              onClick={() => setShowSettings(true)}
+              className="text-xs text-blue-500 hover:text-blue-600"
+            >
+              設定
+            </button>
+          )}
+        </div>
         <div className="flex items-center text-gray-500" style={{ gap: '4px' }}>
           <span style={{ fontSize: '11px', marginRight: '4px' }}>Less</span>
           {[0, 1, 2, 3, 4].map((level) => (
@@ -172,6 +186,95 @@ export const ContributionCalendar: FC<ContributionCalendarProps> = ({ data }) =>
           ))}
           <span style={{ fontSize: '11px', marginLeft: '4px' }}>More</span>
         </div>
+      </div>
+
+      {/* Settings Modal */}
+      {showSettings && onThresholdsChange && (
+        <CalendarThresholdsModal
+          thresholds={currentThresholds}
+          onSave={(newThresholds) => {
+            onThresholdsChange(newThresholds);
+            setShowSettings(false);
+          }}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
+    </div>
+  );
+};
+
+// しきい値設定モーダル
+const CalendarThresholdsModal: FC<{
+  thresholds: CalendarThresholds;
+  onSave: (thresholds: CalendarThresholds) => void;
+  onClose: () => void;
+}> = ({ thresholds, onSave, onClose }) => {
+  const [level1, setLevel1] = useState(thresholds.level1);
+  const [level2, setLevel2] = useState(thresholds.level2);
+  const [level3, setLevel3] = useState(thresholds.level3);
+  const [level4, setLevel4] = useState(thresholds.level4);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({ level1, level2, level3, level4 });
+  };
+
+  const LEVEL_COLORS = ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'];
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-sm">
+        <h3 className="text-lg font-semibold mb-4">カレンダー色設定</h3>
+        <p className="text-sm text-gray-500 mb-4">
+          何ポモドーロ以上で色が変わるかを設定できます
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-3">
+            {[
+              { level: 1, value: level1, setValue: setLevel1, color: LEVEL_COLORS[1] },
+              { level: 2, value: level2, setValue: setLevel2, color: LEVEL_COLORS[2] },
+              { level: 3, value: level3, setValue: setLevel3, color: LEVEL_COLORS[3] },
+              { level: 4, value: level4, setValue: setLevel4, color: LEVEL_COLORS[4] },
+            ].map(({ level, value, setValue, color }) => (
+              <div key={level} className="flex items-center gap-3">
+                <div
+                  style={{
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '3px',
+                    backgroundColor: color,
+                  }}
+                />
+                <label className="text-sm text-gray-600 w-16">Level {level}</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={value}
+                  onChange={(e) => setValue(Number(e.target.value))}
+                  className="w-20 px-2 py-1 border rounded text-center"
+                />
+                <span className="text-sm text-gray-500">回以上</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-2 justify-end pt-4 border-t">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+            >
+              キャンセル
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            >
+              保存
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

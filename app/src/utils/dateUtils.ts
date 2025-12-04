@@ -1,4 +1,5 @@
-import { format, subDays, startOfWeek, addDays, subWeeks } from 'date-fns';
+import { format, startOfWeek, addDays, subWeeks } from 'date-fns';
+import { CalendarThresholds } from '../types';
 
 export const formatDate = (date: Date): string => {
   return format(date, 'yyyy-MM-dd');
@@ -21,12 +22,24 @@ export const getCalendarDays = (weeks: number = 52): Date[] => {
   return days;
 };
 
-export const getContributionLevel = (count: number): number => {
+// デフォルトのしきい値
+export const DEFAULT_CALENDAR_THRESHOLDS: CalendarThresholds = {
+  level1: 1,
+  level2: 2,
+  level3: 3,
+  level4: 5,
+};
+
+export const getContributionLevel = (
+  count: number,
+  thresholds: CalendarThresholds = DEFAULT_CALENDAR_THRESHOLDS
+): number => {
   if (count === 0) return 0;
-  if (count === 1) return 1;
-  if (count === 2) return 2;
-  if (count <= 4) return 3;
-  return 4; // 5回以上
+  if (count >= thresholds.level4) return 4;
+  if (count >= thresholds.level3) return 3;
+  if (count >= thresholds.level2) return 2;
+  if (count >= thresholds.level1) return 1;
+  return 0;
 };
 
 // 指定年の1月1日から12月31日までの日付を取得

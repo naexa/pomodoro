@@ -230,6 +230,163 @@ app.get('/api/daily-log/:date', async (req, res) => {
   }
 });
 
+// Categories API
+app.get('/api/categories', async (_, res) => {
+  try {
+    const data = await readJsonFile('categories.json');
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to read categories' });
+  }
+});
+
+app.post('/api/categories', async (req, res) => {
+  try {
+    const data = await readJsonFile('categories.json');
+    data.categories.push(req.body);
+    await writeJsonFile('categories.json', data);
+    res.json(req.body);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create category' });
+  }
+});
+
+app.put('/api/categories/:id', async (req, res) => {
+  try {
+    const data = await readJsonFile('categories.json');
+    const index = data.categories.findIndex((c: { id: string }) => c.id === req.params.id);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    data.categories[index] = { ...data.categories[index], ...req.body };
+    await writeJsonFile('categories.json', data);
+    res.json(data.categories[index]);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update category' });
+  }
+});
+
+app.delete('/api/categories/:id', async (req, res) => {
+  try {
+    const data = await readJsonFile('categories.json');
+    data.categories = data.categories.filter((c: { id: string }) => c.id !== req.params.id);
+    await writeJsonFile('categories.json', data);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete category' });
+  }
+});
+
+// Stats API - 日別集計
+app.get('/api/stats/daily/:date', async (req, res) => {
+  try {
+    const { date } = req.params;
+    const [taskHistory, categories] = await Promise.all([
+      readJsonFile('taskHistory.json'),
+      readJsonFile('categories.json'),
+    ]);
+
+    const tasks = taskHistory.tasks[date] || [];
+    const categoryMap = new Map(categories.categories.map((c: { id: string }) => [c.id, c]));
+
+    const stats: Record<string, number> = {};
+    let uncategorizedCount = 0;
+
+    for (const task of tasks) {
+      if (task.categoryId && categoryMap.has(task.categoryId)) {
+        stats[task.categoryId] = (stats[task.categoryId] || 0) + 1;
+      } else {
+        uncategorizedCount++;
+      }
+    }
+
+    const categoryStats = Object.entries(stats).map(([categoryId, count]) => {
+      const cat = categoryMap.get(categoryId) as { id: string; name: string; color: string };
+      return {
+        categoryId,
+        categoryName: cat?.name || 'Unknown',
+        color: cat?.color || 'gray',
+        completedCount: count,
+      };
+    });
+
+    res.json({
+      date,
+      categories: categoryStats,
+      uncategorizedCount,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get daily stats' });
+  }
+});
+
+// Stats API - 月別集計
+app.get('/api/stats/monthly/:month', async (req, res) => {
+  try {
+    const { month } = req.params; // "2025-12"
+    const [taskHistory, categories] = await Promise.all([
+      readJsonFile('taskHistory.json'),
+      readJsonFile('categories.json'),
+    ]);
+
+    const categoryMap = new Map(categories.categories.map((c: { id: string }) => [c.id, c]));
+
+    const monthlyStats: Record<string, number> = {};
+    let monthlyUncategorized = 0;
+    const dailyBreakdown: Array<{ date: string; categories: Array<{ categoryId: string; categoryName: string; color: string; completedCount: number }>; uncategorizedCount: number }> = [];
+
+    for (const [date, tasks] of Object.entries(taskHistory.tasks)) {
+      if (!date.startsWith(month)) continue;
+
+      const dayStats: Record<string, number> = {};
+      let dayUncategorized = 0;
+
+      for (const task of tasks as Array<{ categoryId?: string }>) {
+        if (task.categoryId && categoryMap.has(task.categoryId)) {
+          dayStats[task.categoryId] = (dayStats[task.categoryId] || 0) + 1;
+          monthlyStats[task.categoryId] = (monthlyStats[task.categoryId] || 0) + 1;
+        } else {
+          dayUncategorized++;
+          monthlyUncategorized++;
+        }
+      }
+
+      dailyBreakdown.push({
+        date,
+        categories: Object.entries(dayStats).map(([categoryId, count]) => {
+          const cat = categoryMap.get(categoryId) as { id: string; name: string; color: string };
+          return {
+            categoryId,
+            categoryName: cat?.name || 'Unknown',
+            color: cat?.color || 'gray',
+            completedCount: count,
+          };
+        }),
+        uncategorizedCount: dayUncategorized,
+      });
+    }
+
+    dailyBreakdown.sort((a, b) => a.date.localeCompare(b.date));
+
+    res.json({
+      month,
+      categories: Object.entries(monthlyStats).map(([categoryId, count]) => {
+        const cat = categoryMap.get(categoryId) as { id: string; name: string; color: string };
+        return {
+          categoryId,
+          categoryName: cat?.name || 'Unknown',
+          color: cat?.color || 'gray',
+          completedCount: count,
+        };
+      }),
+      uncategorizedCount: monthlyUncategorized,
+      dailyBreakdown,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get monthly stats' });
+  }
+});
+
 // Quotes API
 app.get('/api/quotes', async (_, res) => {
   try {
