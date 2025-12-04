@@ -56,7 +56,9 @@ export const TaskList: FC<TaskListProps> = ({
     })
   );
 
-  const [showAllCompleted, setShowAllCompleted] = useState(false);
+  const INITIAL_DISPLAY = 5;
+  const MAX_DISPLAY = 20;
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const pendingTasks = tasks
     .filter((t) => !t.completed)
@@ -71,11 +73,12 @@ export const TaskList: FC<TaskListProps> = ({
       return bTime - aTime; // 降順（新しいものが上）
     });
 
-  // 表示する完了タスク（5件まで、または全件）
-  const visibleCompletedTasks = showAllCompleted
-    ? completedTasks
-    : completedTasks.slice(0, 5);
-  const hiddenCount = completedTasks.length - 5;
+  // 表示する完了タスク（デフォルト5件、展開時は最大20件）
+  const displayLimit = isExpanded ? MAX_DISPLAY : INITIAL_DISPLAY;
+  const visibleCompletedTasks = completedTasks.slice(0, displayLimit);
+  const canExpand = !isExpanded && completedTasks.length > INITIAL_DISPLAY;
+  const expandCount = Math.min(completedTasks.length, MAX_DISPLAY) - INITIAL_DISPLAY;
+  const hasMoreThanMax = completedTasks.length > MAX_DISPLAY;
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -156,23 +159,32 @@ export const TaskList: FC<TaskListProps> = ({
               onCreateCategory={onCreateCategory}
             />
           ))}
-          {hiddenCount > 0 && (
+          {canExpand && (
             <button
-              onClick={() => setShowAllCompleted(!showAllCompleted)}
+              onClick={() => setIsExpanded(true)}
               className="w-full py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center gap-1"
             >
-              {showAllCompleted ? (
-                <>
-                  <span>▲</span>
-                  <span>折りたたむ</span>
-                </>
-              ) : (
-                <>
-                  <span>▼</span>
-                  <span>さらに {hiddenCount} 件を表示</span>
-                </>
-              )}
+              <span>▼</span>
+              <span>さらに {expandCount} 件を表示</span>
             </button>
+          )}
+          {isExpanded && (
+            <button
+              onClick={() => setIsExpanded(false)}
+              className="w-full py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center gap-1"
+            >
+              <span>▲</span>
+              <span>折りたたむ</span>
+            </button>
+          )}
+          {isExpanded && hasMoreThanMax && (
+            <a
+              href="#/history"
+              className="w-full py-2 text-sm text-primary hover:text-primary-hover hover:bg-primary/5 rounded-lg transition-colors flex items-center justify-center gap-1"
+            >
+              <span>履歴を見る（全{completedTasks.length}件）</span>
+              <span>→</span>
+            </a>
           )}
         </div>
       )}

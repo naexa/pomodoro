@@ -1,17 +1,19 @@
 import { FC, useMemo, useState } from 'react';
-import { CalendarData } from '../../types';
+import { CalendarData, CalendarThresholds } from '../../types';
 import { CalendarCell } from './CalendarCell';
-import { getYearCalendarDays, formatDate } from '../../utils/dateUtils';
+import { getYearCalendarDays, formatDate, DEFAULT_CALENDAR_THRESHOLDS } from '../../utils/dateUtils';
 
 interface YearlyCalendarProps {
   data: CalendarData;
   onDateSelect?: (date: string) => void;
+  thresholds?: CalendarThresholds;
 }
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export const YearlyCalendar: FC<YearlyCalendarProps> = ({ data, onDateSelect }) => {
+export const YearlyCalendar: FC<YearlyCalendarProps> = ({ data, onDateSelect, thresholds }) => {
+  const currentThresholds = thresholds || DEFAULT_CALENDAR_THRESHOLDS;
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
@@ -170,6 +172,7 @@ export const YearlyCalendar: FC<YearlyCalendarProps> = ({ data, onDateSelect }) 
                         pomodoroCount={entry?.pomodoroCount || 0}
                         completedCount={entry?.completedCount || 0}
                         onClick={onDateSelect ? () => onDateSelect(dateStr) : undefined}
+                        thresholds={currentThresholds}
                       />
                     );
                   })}
@@ -183,7 +186,7 @@ export const YearlyCalendar: FC<YearlyCalendarProps> = ({ data, onDateSelect }) 
       {/* Legend */}
       <div className="flex items-center justify-between mt-3">
         <span className="text-xs text-gray-400">
-          ※ 色はポモドーロ完了数で決まります（0→1→2→3-4→5+）
+          ※ 色はポモドーロ完了数で決まります（0→{currentThresholds.level1}→{currentThresholds.level2}→{currentThresholds.level3}→{currentThresholds.level4}+）
         </span>
         <div className="flex items-center text-gray-500" style={{ gap: '4px' }}>
           <span style={{ fontSize: '11px', marginRight: '4px' }}>Less</span>

@@ -2,13 +2,18 @@ import { FC, useState, useEffect, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { format, addDays, subDays, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { fetchDailyLog, DailyLogResponse, fetchDailyStats, fetchMonthlyStats } from '../api/dataApi';
+import { fetchDailyLog, DailyLogResponse, fetchDailyStats, fetchMonthlyStats, fetchSettings } from '../api/dataApi';
 import { formatDate } from '../utils/dateUtils';
 import { YearlyCalendar } from '../components/Calendar';
 import { useCalendar } from '../hooks/useCalendar';
 import { CategoryBadge } from '../components/Category';
-import { DailyStats, MonthlyStats } from '../types';
+import { DailyStats, MonthlyStats, Settings } from '../types';
 import { useCategories, getCategoryColorClasses } from '../hooks/useCategories';
+
+const DEFAULT_SETTINGS: Settings = {
+  timer: { focusDuration: 25, breakDuration: 10, longBreakDuration: 20, setsPerRound: 4 },
+  youtube: { focusUrls: [], breakUrls: [] },
+};
 
 export const DailyLogPage: FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -24,6 +29,7 @@ export const DailyLogPage: FC = () => {
   const [showMonthly, setShowMonthly] = useState(false);
   const { data: calendarData } = useCalendar();
   const { categories } = useCategories();
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
 
   const loadLog = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
@@ -49,6 +55,13 @@ export const DailyLogPage: FC = () => {
   useEffect(() => {
     loadLog();
   }, [loadLog]);
+
+  // 設定を読み込む
+  useEffect(() => {
+    fetchSettings()
+      .then(setSettings)
+      .catch(() => console.log('Using default settings'));
+  }, []);
 
   // ウィンドウにフォーカスが戻った時にデータを再取得
   useEffect(() => {
@@ -532,6 +545,7 @@ export const DailyLogPage: FC = () => {
           <YearlyCalendar
             data={calendarData}
             onDateSelect={handleDateChange}
+            thresholds={settings.calendarThresholds}
           />
         </div>
       </div>

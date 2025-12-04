@@ -347,6 +347,11 @@ export const SortableTaskItem: FC<SortableTaskItemProps> = ({
           >
             {task.title}
           </span>
+          {task.completed && task.completedAt && (
+            <span className="text-xs text-text-muted whitespace-nowrap">
+              完了: {new Date(task.completedAt).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}
+            </span>
+          )}
           {/* カテゴリバッジ / ピッカー */}
           <div className="relative flex-shrink-0" ref={categoryPickerRef}>
             {category ? (
